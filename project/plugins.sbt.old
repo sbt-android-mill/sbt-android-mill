@@ -1,0 +1,9 @@
+resolvers += Resolver.url("Typesafe repository", new java.net.URL("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns)
+
+resolvers += "jgit-repo" at "http://download.eclipse.org/jgit/maven"
+
+addSbtPlugin("com.jsuereth" % "sbt-ghpages-plugin" % "0.4.0")
+
+libraryDependencies <+= (sbtVersion) { sv =>
+  "org.scala-sbt" %% "scripted-plugin" % sv
+}
