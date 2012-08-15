@@ -1,6 +1,6 @@
 /**
  * sbt-android-mill android plugin with profiling and multi-thread support
- * 
+ *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,16 +18,26 @@
 
 package sbt.android.mill
 
-import sbt._
-import Keys._
+import scala.xml.NodeSeq.seqToNodeSeq
+
 import MillKeys._
+import sbinary.DefaultProtocol.StringFormat
+import sbt._
+import sbt.Keys._
 
 object MillSettings {
   val defaultSettings = Seq[Setting[_]](
     assetsDirectoryName := MillDefaults.assetsDirectoryName,
-    resDirectoryName := MillDefaults.resDirectoryName,
-    envs := MillDefaults.envs)
+    envs := MillDefaults.envs,
+    jarNameSDK := MillDefaults.jarNameSDK,
+    manifestName := MillDefaults.manifestName,
+    preinstalledModules := MillDefaults.preinstalledModules,
+    resDirectoryName := MillDefaults.resDirectoryName)
   val runtimeSettings = Seq[Setting[_]](
+    manifestPackagePath <<= findManifestPath,
+    // after task manifestPath completed fire triggeredBy callback
+    manifestPackageName <<= findManifestPath storeAs manifestPackageName triggeredBy manifestPath,
+    platformToolsPath <<= (sdkPath)(_ / "platform-tools"),
     sdkPath <<= (envs, baseDirectory) { (es, dir) =>
       MillHelpers.determineAndroidSdkPath(es).getOrElse {
         val local = new File(dir, "local.properties")
@@ -42,8 +52,7 @@ object MillSettings {
         } else sys.error(
           "Android SDK not found. You might need to set %s".format(es.mkString(" or ")))
       }
-    },
-    platformToolsPath <<= (sdkPath)(_ / "platform-tools"))
+    })
   val delegateSettings = Seq[Setting[_]](
     // Handle the delegates for android settings
     classDirectory <<= (classDirectory in Compile),
@@ -55,11 +64,20 @@ object MillSettings {
     managedClasspath <<= (managedClasspath in Runtime),
     fullClasspath <<= (fullClasspath in Runtime))
   val derivativeSettings = Seq[Setting[_]](
-    nativeLibrariesPath <<= (sourceDirectory)(_ / "libs"),
+    jarPathSDK <<= (platformPath, jarNameSDK)(_ / _),
     mainAssetsPath <<= (sourceDirectory, assetsDirectoryName)(_ / _),
     mainResPath <<= (sourceDirectory, resDirectoryName)(_ / _) map (x => x),
     managedJavaPath <<= (sourceManaged in Compile)(_ / "java"),
     managedScalaPath <<= (sourceManaged in Compile)(_ / "scala"),
     managedNativePath <<= (sourceManaged in Compile)(_ / "native_libs"),
+    manifestPath <<= (sourceDirectory, manifestName) map ((s, m) => Seq(s / m)),
+    nativeLibrariesPath <<= (sourceDirectory)(_ / "libs"),
     platformPath <<= (sdkPath, platformName)(_ / "platforms" / _))
+  val overwriteSettings = Seq[Setting[_]](
+    managedSourceDirectories in Compile <<= (managedJavaPath, managedScalaPath)(Seq(_, _)),
+    unmanagedJars in Compile <++= (jarPathSDK) map (_.get.map(Attributed.blank(_))),
+    classpathTypes in Compile := Set("jar", "bundle", "so"))
+
+  def findManifestPath() = (manifestPath) map (p =>
+    MillHelpers.manifest(p.head).attribute("package").getOrElse(sys.error("package not defined")).text)
 }

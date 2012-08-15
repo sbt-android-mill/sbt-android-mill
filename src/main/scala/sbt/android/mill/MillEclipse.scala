@@ -23,5 +23,8 @@ import sbt._
 object MillEclipse extends Mill {
   lazy val millSettings = inConfig(millConf)(pre.Pre.settings ++
     aidl.AIDL.settings ++
+    aapt.AAPT.settings ++
+    compile.Compile.settings ++
+    proguard.Proguard.settings ++
     compositeSettings)
 }

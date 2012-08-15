@@ -1,6 +1,6 @@
 /**
  * sbt-android-mill android plugin with profiling and multi-thread support
- * 
+ *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,19 @@
 
 package sbt.android.mill
 
+import sbt._
+
 object MillDefaults {
-  val envs = List("ANDROID_SDK_HOME", "ANDROID_SDK_ROOT", "ANDROID_HOME")
   val assetsDirectoryName = "assets"
+  val envs = List("ANDROID_SDK_HOME", "ANDROID_SDK_ROOT", "ANDROID_HOME")
+  val jarNameSDK = "android.jar"
+  val manifestName = "AndroidManifest.xml"
+  val preinstalledModules = Seq[ModuleID](
+    ModuleID("org.apache.httpcomponents", "httpcore", null),
+    ModuleID("org.apache.httpcomponents", "httpclient", null),
+    ModuleID("org.json", "json", null),
+    ModuleID("commons-logging", "commons-logging", null),
+    ModuleID("commons-codec", "commons-codec", null)
+    )
   val resDirectoryName = "res"
 }

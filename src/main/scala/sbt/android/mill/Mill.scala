@@ -19,11 +19,12 @@
 package sbt.android.mill
 
 import sbt._
-import Keys._
+import sbt.Keys._
 import sbt.Plugin
 import sbt.android.mill.MillKeys._
 import stopwatch.StopwatchGroup
 import java.lang.System
+import scala.xml.XML
 
 /**
  * main plugin class
@@ -32,17 +33,19 @@ import java.lang.System
  * stage 1 - aidl
  * stage 2 - aapt
  * stage 3 - compile
- * stage 4 - dex
- * stage 5 - apkBuilder
- * stage 6 - jarSigner
- * stage 7 - zipAlign
- * stage 8 - publish
+ * stage 4 - proguard
+ * stage 5 - dex
+ * stage 6 - apkBuilder
+ * stage 7 - jarSigner
+ * stage 8 - zipAlign
+ * stage 9 - publish
  */
 abstract class Mill extends Plugin {
   val millSettings: Seq[Project.Setting[_]]
   def millConf = config("android-mill") extend (Compile)
 
   lazy val compositeSettings: Seq[Project.Setting[_]] = MillSettings.defaultSettings ++
+    MillSettings.overwriteSettings ++
     MillSettings.runtimeSettings ++
     MillSettings.delegateSettings ++
     MillSettings.derivativeSettings ++
@@ -54,21 +57,72 @@ abstract class Mill extends Plugin {
 object Mill {
   @volatile var buildStartTime = System.currentTimeMillis()
   @volatile var profilingGroups = Seq[StopwatchGroup]()
-  /*    stage1_prepare <<= stage1_prepareTask,
-    stage2_AAPT <<= stage2_AAPTTask,
-    stage2_AAPT <<= stage2_AAPT dependsOn (stage1_prepare),
-    stage3_aidl <<= stage3_aidlTask,
-    stage3_aidl <<= stage3_aidl dependsOn (stage1_prepare),
-    stage4_compile <<= stage4_compileTask,
-    stage4_compile <<= stage4_compile dependsOn (stage2_AAPT, stage3_aidl)))*/
   val tasksSequence = Seq(
-    aidlStageCore <<= aidlStageCore dependsOn (preStageCore))
+    aaptStageCore <<= aaptStageCore dependsOn (preStageCore),
+    aidlStageCore <<= aidlStageCore dependsOn (preStageCore),
+    compileStageCorePre <<= compileStageCorePre dependsOn (aaptStageCore, aidlStageCore),
+    proguardStageCore <<= proguardStageCore dependsOn (compileStageCore))
 
   val settings = Seq(
+    libraries <<= dependenciesTask,
+    librariesSources <<= dependenciesSourcesTask,
+    makeManagedJavaPath <<= MillHelpers.directory(managedJavaPath),
+    sourceGenerators in Compile <+= librariesSources,
     statistics <<= statisticsTask)
 
-  def statisticsTask = (streams) map (s => dumpStopWatchStatistics(s.log))
+  def dependenciesTask =
+    (update in Compile, sourceManaged, managedJavaPath, resourceManaged,
+      assetsDirectoryName, resDirectoryName, manifestName, streams) map {
+        (updateReport, srcManaged, javaManaged, resManaged, resName, assetsName, manifestName, s) =>
+          stopwatchGroup(MillKeys.libraries.key.label) {
+            val libraries = updateReport.matching(artifactFilter(`type` = "apklib"))
+            libraries map { apklib =>
+              s.log.info("extracting library " + apklib.name)
+              val dest = srcManaged / ".." / apklib.base
 
+              val unzipped = IO.unzip(apklib, dest)
+              def moveContents(fromDir: File, toDir: File) = {
+                toDir.mkdirs()
+                val pairs = for (
+                  file <- unzipped;
+                  rel <- IO.relativize(fromDir, file)
+                ) yield (file, toDir / rel)
+                IO.move(pairs)
+                pairs map { case (_, t) => t }
+              }
+              val sources = moveContents(dest / "src", javaManaged)
+
+              val manifest = dest / manifestName
+              val pkgName = XML.loadFile(manifest).attribute("package").get.head.text
+              LibraryProject(
+                pkgName,
+                manifest,
+                sources,
+                Some(dest / resName) filter { _.exists },
+                Some(dest / assetsName) filter { _.exists })
+            }
+          }
+      }
+  private def dependenciesSourcesTask =
+    (libraries, streams) map {
+      (projectLibs, s) =>
+        stopwatchGroup(MillKeys.librariesSources.key.label) {
+          if (!projectLibs.isEmpty) {
+            s.log.debug("generating source files from apklibs")
+            val xs = for (
+              l <- projectLibs;
+              f <- l.sources
+            ) yield f
+
+            s.log.info("generated " + xs.size + " source files from " + projectLibs.size + " apklibs")
+            xs
+          } else Seq.empty
+        }
+    }
+  def statisticsTask = (streams) map (s => dumpStopWatchStatistics(s.log))
+  /*
+   * helpers
+   */
   def getStopwatchGroup(name: String) =
     Mill.profilingGroups.find(_.name == name) match {
       case Some(group) =>
@@ -84,6 +138,7 @@ object Mill {
     group =>
       log.info("""process "%s" stopwatch statistics:""".format(group.name))
       group.names.toSeq.sorted.foreach(name =>
-        log.info(group.snapshot(name).toShortString))
+        log.info("  " + group.snapshot(name).toShortString))
   }
+  def stopwatchGroup = Mill.getStopwatchGroup("core")
 }

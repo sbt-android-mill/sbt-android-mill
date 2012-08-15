@@ -27,8 +27,17 @@ object AIDL extends MillStage {
   lazy val stagePrepareKey = aidlStagePrepare
   lazy val stageCoreKey = aidlStageCore
   lazy val stageFinalizerKey = aidlStageFinalizer
-  val DefaultAaidlName = "aidl"
-
+  val DefaultAIDLName = "aidl"
+  lazy val settings: Seq[Project.Setting[_]] = Seq(
+    aidlName := DefaultAIDLName,
+    aidlPath <<= (platformToolsPath, aidlName)(_ / _),
+    aidlStagePrepare <<= stagePrepareTask,
+    aidlStageCore <<= aidlStageCoreTask,
+    aidlStageCore <<= aidlStageCore dependsOn aidlStagePrepare,
+    aidlStageFinalizer <<= stageFinalizerTask,
+    aidlStageFinalizer <<= aidlStageFinalizer dependsOn (aidlStagePrepare, aidlStageCore),
+    sourceGenerators in Compile <+= aidlStageCore)
+    
   def aidlStageCoreTask =
     (sourceDirectories, aidlPath, platformPath, managedJavaPath, javaSource, streams) map {
       (sDirs, aidlPath, platformPath, javaPath, jSource, s) =>
@@ -63,13 +72,4 @@ object AIDL extends MillStage {
     (streams) map {
       (s) =>
     }
-
-  lazy val settings: Seq[Project.Setting[_]] = Seq(
-    aidlName := DefaultAaidlName,
-    aidlPath <<= (platformToolsPath, aidlName)(_ / _),
-    aidlStagePrepare <<= stagePrepareTask,
-    aidlStageCore <<= aidlStageCoreTask,
-    aidlStageCore <<= aidlStageCore dependsOn aidlStagePrepare,
-    aidlStageFinalizer <<= stageFinalizerTask,
-    aidlStageFinalizer <<= stageFinalizerTask dependsOn aidlStageCore)
 }
