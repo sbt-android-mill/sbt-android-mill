@@ -1,4 +1,4 @@
-import sbt.android.mill.AndroidKeys._
+import sbt.android.mill.MillKeys._
 
 name := "Simple"
 
@@ -8,7 +8,7 @@ scalaVersion := "2.8.2"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit")
 
-sbt.android.mill.AndroidEclipse.millSettings
+sbt.android.mill.MillEclipse.millSettings
 
 logLevel := Level.Debug
 

@@ -18,32 +18,24 @@ package sbt.android.mill.aidl
 
 import sbt.Keys._
 import sbt._
-import sbt.android.mill.AndroidKeys._
+import sbt.android.mill.MillKeys._
 import sbt.android.mill.MillStage
-import sbt.android.mill.AndroidMill
+import stopwatch.Stopwatch
+import sbt.android.mill.Mill
 
-object Main extends MillStage {
-  @volatile private var profiling: Option[stopwatch.Stopwatch] = None
-  val before = aidlBefore
-  val stage = aidlStage
-  val after = aidlAfter
-
+object AIDL extends MillStage {
+  lazy val stagePrepareKey = aidlStagePrepare
+  lazy val stageCoreKey = aidlStageCore
+  lazy val stageFinalizerKey = aidlStageFinalizer
   val DefaultAaidlName = "aidl"
 
-  def aidlBeforeTask =
+  def aidlStageCoreTask =
     (sourceDirectories, aidlPath, platformPath, managedJavaPath, javaSource, streams) map {
       (sDirs, aidlPath, platformPath, javaPath, jSource, s) =>
-        s.log.debug("enter aidl-before")
-        profiling = Some(AndroidMill.profiling.start("aidl"))
-        false
-    }
-  def aidlStageTask =
-    (aidlBefore, sourceDirectories, aidlPath, platformPath, managedJavaPath, javaSource, streams) map {
-      (aidlBefore, sDirs, aidlPath, platformPath, javaPath, jSource, s) =>
-        s.log.debug("enter aidl-generate")
+        stageCorePre(s.log)
         val aidlPaths = sDirs.map(_ ** "*.aidl").reduceLeft(_ +++ _).get
-        if (aidlPaths.isEmpty) {
-          s.log.debug("no AIDL files found, skipping")
+        val files = if (aidlPaths.isEmpty) {
+          s.log.debug(header + " no AIDL files found, skipping")
           Nil
         } else {
           val processor = aidlPaths.map { ap =>
@@ -58,41 +50,26 @@ object Main extends MillStage {
               case Some(first) => Some(first #&& s)
             }
           }.get
-          s.log.debug("generating aidl " + processor)
+          s.log.debug(header + " generating aidl " + processor)
           processor !
 
           val rPath = javaPath ** "R.java"
           javaPath ** "*.java" --- (rPath) get
         }
+        stageCorePost()
+        files
     }
-  def aidlAfterTask =
-    (aidlStage, sourceDirectories, aidlPath, platformPath, managedJavaPath, javaSource, streams) map {
-      (aidlStage, sDirs, aidlPath, platformPath, javaPath, jSource, s) =>
-        s.log.debug("enter aidl-after")
-        profiling.foreach(_.stop)
+  def aidlStageTask =
+    (streams) map {
+      (s) =>
     }
 
-  val settings = Seq(
+  lazy val settings: Seq[Project.Setting[_]] = Seq(
     aidlName := DefaultAaidlName,
     aidlPath <<= (platformToolsPath, aidlName)(_ / _),
-    aidlBefore <<= aidlBeforeTask,
-    aidlStage <<= aidlStageTask,
-    aidlAfter <<= aidlAfterTask)
-
-  /*trait Main {
-  this: AndroidFabric =>
-
-  /*    (streams) map {
-      (s) =>
-        s.log.debug("aidl in thread " + Thread.currentThread.getId)
-                for (i <- 0 to 10) {
-          s.log.debug(Thread.currentThread.getId + " ! " + i)
-          Thread.sleep(1000)
-        }
-
-    }*/
-  val settingsStage3 = inConfig(fabricConf)(Seq(
-    ))
-}
-*/
+    aidlStagePrepare <<= stagePrepareTask,
+    aidlStageCore <<= aidlStageCoreTask,
+    aidlStageCore <<= aidlStageCore dependsOn aidlStagePrepare,
+    aidlStageFinalizer <<= stageFinalizerTask,
+    aidlStageFinalizer <<= stageFinalizerTask dependsOn aidlStageCore)
 }

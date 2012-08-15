@@ -1,4 +1,6 @@
 /**
+ * sbt-android-mill android plugin with profiling and multi-thread support
+ *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,13 +20,19 @@ package sbt.android.mill
 
 import sbt._
 
-object AndroidKeys {
+object MillKeys {
+  // sbt.android.mill
+  val statistics = TaskKey[Unit]("statistics", "Show execution statistics")
+  // sbt.android.mill.pre
+  val preStagePrepare = TaskKey[Unit]("pre-prepare", "First task in sequence before build project.")
+  val preStageCore = TaskKey[Unit]("pre-core", "Core task for preparing environment before build project.")
+  val preStageFinalizer = TaskKey[Unit]("pre", "Prepage environment before build project.")
   // sbt.android.mill.aidl
   val aidlName = SettingKey[String]("aidl-name")
   val aidlPath = SettingKey[File]("aidl-path")
-  val aidlBefore = TaskKey[Boolean]("aidl-before", "Before hook for generate Java classes from .aidl files.")
-  val aidlStage = TaskKey[Seq[File]]("aidl-generate", "Generate Java classes from .aidl files.")
-  val aidlAfter = TaskKey[Unit]("aidl-after", "After hook for generate Java classes from .aidl files.")
+  val aidlStagePrepare = TaskKey[Unit]("aidl-prepare", "Prepare for generation Java classes from .aidl files.")
+  val aidlStageCore = TaskKey[Seq[File]]("aidl-core", "Core task for generating Java classes from .aidl files.")
+  val aidlStageFinalizer = TaskKey[Unit]("aidl-generate", "Generate Java classes from .aidl files.")
 
   /** Names */
   val platformName = SettingKey[String]("platform-name", "Targetted android platform")

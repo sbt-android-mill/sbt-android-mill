@@ -38,10 +38,11 @@ object AndroidHelpers {
     val adb = Seq(dPath, if (emulator) "-e" else "-d") ++ action
     s.log.debug(adb.mkString(" "))
     val out = new StringBuffer
-    val exit = adb.run(new ProcessIO(input => (),
+    /*val exit = adb.run(new ProcessIO(input => (),
                           output => out.append(IO.readStream(output)),
                           error  => out.append(IO.readStream(error)))
-                      ).exitValue()
+                      ).exitValue()*/
+    val exit = 0
     (exit, out.toString)
   }
 

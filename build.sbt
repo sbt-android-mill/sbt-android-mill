@@ -8,32 +8,25 @@ version := "0.1-SNAPSHOT"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit", "-Xfatal-warnings")
 
-publishMavenStyle := false
-
-publishTo <<= (version) { version: String =>
-    val scalasbt = "http://scalasbt.artifactoryonline.com/scalasbt/"
-    val (name, url) = if (version.contains("-"))
-                        ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
-                      else
-                        ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
-    Some(Resolver.url(name, new URL(url))(Resolver.ivyStylePatterns))
-}
-
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
 libraryDependencies ++= Seq(
-  "com.google.android.tools" % "ddmlib" % "r10",
-  "net.sf.proguard" % "proguard-base" % "4.6"
+    "org.digimead" %% "stopwatch-core" % "1.0-SNAPSHOT",
+    "com.google.android.tools" % "ddmlib" % "r10",
+    "net.sf.proguard" % "proguard-base" % "4.6"
 )
 
 sbtPlugin := true
 
-commands += Status.stampVersion
-
 ScriptedPlugin.scriptedSettings
 
-seq(site.settings:_*)
+site.settings
 
-seq(ghpages.settings:_*)
+//ghpages.settings
 
-git.remoteRepo := "git@github.com:{your username}/{your project}.git"
+//git.remoteRepo := "git@github.com:{your username}/{your project}.git"
+
+//logLevel := Level.Debug
+
+sbt.source.align.Align.alignSettings
+
+resolvers += "stopwatch" at "http://sbt-android-mill.github.com/stopwatch/releases"

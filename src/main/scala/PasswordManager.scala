@@ -48,7 +48,7 @@ object OSXPasswordManager extends PWManager {
   def fetch(service: String, account: String): Option[String] = {
 
     val buffer = new StringBuffer
-    Seq("security",
+    /*Seq("security",
       "find-generic-password",
       "-a", account,
       "-s", service, "-g").run(new ProcessIO(input => (),
@@ -62,7 +62,8 @@ object OSXPasswordManager extends PWManager {
           // password not stored yet
           None
         case _ => None
-      }
+      }*/
+    null
   }
 
   def store(service: String, account: String, pw: String): Option[String] = {
@@ -85,11 +86,11 @@ object OSXPasswordManager extends PWManager {
   }
 
   def clear() {
-    if (Seq("security",
+    /*if (Seq("security",
       "delete-generic-password",
       "-l", Label
       ).run(new ProcessIO(input => (), output => (), error => ()))
-       .exitValue() == 0) clear()
+       .exitValue() == 0) clear()*/
   }
 }
 

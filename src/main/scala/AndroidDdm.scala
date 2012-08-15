@@ -84,7 +84,8 @@ object AndroidDdm {
       None
     } else {
       val (emus, devices) = bridged.getDevices.partition(_.isEmulator)
-      (if (emulator) emus else devices).headOption.map(action)
+      //(if (emulator) emus else devices).headOption.map(action)
+      null // TODO
     }
   }
 
