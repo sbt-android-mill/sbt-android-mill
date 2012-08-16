@@ -17,6 +17,7 @@
 package sbt.android.mill.proguard
 
 import java.io.{ File => JFile }
+import java.util.Properties
 
 import proguard.{ Configuration => ProGuardConfiguration, ProGuard, ConfigurationParser }
 
@@ -67,7 +68,7 @@ object Proguard extends MillStage {
               Nil) ++ optimizationOptions ++ proguardOption
             streams.log.debug("executing proguard: " + (for (i <- 0 until args.size) yield { "arg" + (i + 1) + ": " + args(i) }).mkString("\n"))
             val config = new ProGuardConfiguration
-            new ConfigurationParser(args.toArray[String]).parse(config)
+            new ConfigurationParser(args.toArray[String], new Properties).parse(config)
             streams.log.debug("executing proguard: " + args.mkString("\n"))
             new ProGuard(config).execute
             Some(classesMinJarPath)
@@ -92,7 +93,7 @@ object Proguard extends MillStage {
             ).filter(cp =>
         cp.get(artifact.key).map(artifact => (classpathTypes - "so").contains(artifact.`type`)).getOrElse(true)).map(_.data) --- proguardExclude get
   }
-  def proguardOptionTask: Project.Initialize[Task[Seq[String]]] = (manifestPackagePath) map { (manifestPackage) =>
+  def proguardOptionTask: Project.Initialize[Task[Seq[String]]] = (manifestPackage) map { (manifestPackage) =>
     ("-dontwarn" :: "-dontobfuscate" ::
       "-dontnote scala.Enumeration" ::
       "-dontnote org.xml.sax.EntityResolver" ::

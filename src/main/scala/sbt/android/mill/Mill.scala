@@ -1,5 +1,5 @@
 /**
- * sbt-android-mill android plugin with profiling and multi-thread support
+ * sbt-android-mill - simple-build-tool multi-thread plugin with profiling
  *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
@@ -35,7 +35,7 @@ import scala.xml.XML
  * stage 3 - compile
  * stage 4 - proguard
  * stage 5 - dex
- * stage 6 - apkBuilder
+ * stage 6 - apkBuilder (aaptPackage)
  * stage 7 - jarSigner
  * stage 8 - zipAlign
  * stage 9 - publish
@@ -55,21 +55,61 @@ abstract class Mill extends Plugin {
 }
 
 object Mill {
-  @volatile var buildStartTime = System.currentTimeMillis()
+  @volatile var buildStartTime = 0L
   @volatile var profilingGroups = Seq[StopwatchGroup]()
   val tasksSequence = Seq(
     aaptStageCore <<= aaptStageCore dependsOn (preStageCore),
     aidlStageCore <<= aidlStageCore dependsOn (preStageCore),
     compileStageCorePre <<= compileStageCorePre dependsOn (aaptStageCore, aidlStageCore),
-    proguardStageCore <<= proguardStageCore dependsOn (compileStageCore))
+    packageConfig <<= packageConfigTask,
+    proguardStageCore <<= proguardStageCore dependsOn (compileStageCore),
+    aaptPackage <<= aaptPackage dependsOn (makeAssetPath, dxStageCore),
+    deviceStageCore <<= deviceStageCore dependsOn packageDebug,
+    emulatorStageCore <<= emulatorStageCore dependsOn packageDebug)
+  /*
+   * dxStageCore depends on dxInput that takes as input proguardStageCore
+   * packageConfig depends on aaptPackage
+   * packageDebug depends on packageConfigTask
+   */
 
   val settings = Seq(
+    cleanApk <<= (packageApkPath) map (IO.delete(_)),
+    copyNativeLibraries <<= copyNativeLibrariesTask,
     libraries <<= dependenciesTask,
     librariesSources <<= dependenciesSourcesTask,
-    makeManagedJavaPath <<= MillHelpers.directory(managedJavaPath),
+    makeAssetPath <<= directory(mainAssetsPath),
+    makeManagedJavaPath <<= directory(managedJavaPath),
+    packageDebug <<= packageTask(true),
+    packageDebug <<= packageDebug dependsOn (cleanApk, aaptPackage, copyNativeLibraries),
+    packageRelease <<= packageTask(false),
+    packageRelease <<= packageRelease dependsOn (cleanApk, aaptPackage, copyNativeLibraries),
     sourceGenerators in Compile <+= librariesSources,
     statistics <<= statisticsTask)
 
+  def copyNativeLibrariesTask =
+    (streams, managedNativePath, dependencyClasspath in Compile) map {
+      (s, natives, deps) =>
+        {
+          val sos = (deps.map(_.data)).filter(_.name endsWith ".so")
+          var copied = Seq.empty[File]
+          for (so <- sos)
+            getNativeTarget(natives, so.name, "armeabi") orElse getNativeTarget(natives, so.name, "armeabi-v7a") map {
+              target =>
+                target.getParentFile.mkdirs
+                IO.copyFile(so, target)
+                copied +:= target
+                s.log.debug("copied native:   " + target.toString)
+            }
+          /* clean up stale native libraries */
+          for (path <- IO.listFiles(natives / "armeabi") ++ IO.listFiles(natives / "armeabi-v7a")) {
+            s.log.debug("checking native: " + path.toString)
+            if (path.name.endsWith(".so") && !copied.contains(path)) {
+              IO.delete(path)
+              s.log.debug("deleted native:  " + path.toString)
+            }
+          }
+        }
+    }
   def dependenciesTask =
     (update in Compile, sourceManaged, managedJavaPath, resourceManaged,
       assetsDirectoryName, resDirectoryName, manifestName, streams) map {
@@ -103,7 +143,7 @@ object Mill {
             }
           }
       }
-  private def dependenciesSourcesTask =
+  def dependenciesSourcesTask =
     (libraries, streams) map {
       (projectLibs, s) =>
         stopwatchGroup(MillKeys.librariesSources.key.label) {
@@ -119,10 +159,39 @@ object Mill {
           } else Seq.empty
         }
     }
+  def packageConfigTask =
+    (toolsPath, packageApkPath, aaptAPKPath, dxProjectDexPath,
+      nativeLibrariesPath, managedNativePath, dxInputs, resourceDirectory) map
+      (ApkConfig(_, _, _, _, _, _, _, _))
+  def packageTask(debug: Boolean): Project.Initialize[Task[File]] = (packageConfig, streams) map { (c, s) =>
+    val builder = new MillApkBuilder(c, debug)
+    builder.build.fold(sys.error(_), s.log.info(_))
+    s.log.debug(builder.outputStream.toString)
+    c.packageApkPath
+  }
   def statisticsTask = (streams) map (s => dumpStopWatchStatistics(s.log))
   /*
    * helpers
    */
+  def determineAndroidSdkPath(es: Seq[String]) = {
+    val paths = for (e <- es; p = System.getenv(e); if p != null) yield p
+    if (paths.isEmpty) None else Some(Path(paths.head).asFile)
+  }
+  def directory(path: SettingKey[File]) = path map (IO.createDirectory(_))
+  def dumpStopWatchStatistics(implicit log: Logger) = profilingGroups.sortBy(_.name).foreach {
+    group =>
+      log.info("""process "%s" stopwatch statistics:""".format(group.name))
+      group.names.toSeq.sorted.foreach(name =>
+        log.info("  " + group.snapshot(name).toShortString))
+  }
+  def getNativeTarget(parent: File, name: String, abi: String) = {
+    val extension = "-" + abi + ".so"
+    if (name endsWith extension) {
+      val stripped = name.substring(0, name indexOf '-') + ".so"
+      val target = new File(abi) / stripped
+      Some(parent / target.toString)
+    } else None
+  }
   def getStopwatchGroup(name: String) =
     Mill.profilingGroups.find(_.name == name) match {
       case Some(group) =>
@@ -134,11 +203,8 @@ object Mill {
         Mill.profilingGroups = Mill.profilingGroups :+ group
         group
     }
-  def dumpStopWatchStatistics(implicit log: Logger) = profilingGroups.sortBy(_.name).foreach {
-    group =>
-      log.info("""process "%s" stopwatch statistics:""".format(group.name))
-      group.names.toSeq.sorted.foreach(name =>
-        log.info("  " + group.snapshot(name).toShortString))
-  }
+  def isWindows = System.getProperty("os.name").startsWith("Windows")
+  def manifest(mpath: File) = xml.XML.loadFile(mpath)
+  def osBatchSuffix = if (isWindows) ".bat" else ""
   def stopwatchGroup = Mill.getStopwatchGroup("core")
 }

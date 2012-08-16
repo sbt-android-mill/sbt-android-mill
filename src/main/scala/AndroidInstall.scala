@@ -128,7 +128,7 @@ object AndroidInstall {
                  Nil) ++ optimizationOptions ++ proguardOption
           streams.log.debug("executing proguard: " + (for (i <- 0 until args.size) yield {"arg" + (i + 1) + ": " + args(i)}).mkString("\n"))
           val config = new ProGuardConfiguration
-          new ConfigurationParser(args.toArray[String]).parse(config)
+//          new ConfigurationParser(args.toArray[String]).parse(config)
           streams.log.debug("executing proguard: "+args.mkString("\n"))
           new ProGuard(config).execute
           Some(classesMinJarPath)

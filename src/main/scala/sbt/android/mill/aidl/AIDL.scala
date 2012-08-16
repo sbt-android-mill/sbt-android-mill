@@ -28,6 +28,7 @@ object AIDL extends MillStage {
   lazy val stageCoreKey = aidlStageCore
   lazy val stageFinalizerKey = aidlStageFinalizer
   val DefaultAIDLName = "aidl"
+
   lazy val settings: Seq[Project.Setting[_]] = Seq(
     aidlName := DefaultAIDLName,
     aidlPath <<= (platformToolsPath, aidlName)(_ / _),
@@ -44,7 +45,7 @@ object AIDL extends MillStage {
         stageCorePre(s.log)
         val aidlPaths = sDirs.map(_ ** "*.aidl").reduceLeft(_ +++ _).get
         val files = if (aidlPaths.isEmpty) {
-          s.log.debug(header + " no AIDL files found, skipping")
+          s.log.debug(header() + "no AIDL files found, skipping")
           Nil
         } else {
           val processor = aidlPaths.map { ap =>
@@ -59,7 +60,7 @@ object AIDL extends MillStage {
               case Some(first) => Some(first #&& s)
             }
           }.get
-          s.log.debug(header + " generating aidl " + processor)
+          s.log.debug(header() + "generating aidl " + processor)
           processor !
 
           val rPath = javaPath ** "R.java"

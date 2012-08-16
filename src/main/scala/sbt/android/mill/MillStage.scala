@@ -1,5 +1,5 @@
 /**
- * sbt-android-mill android plugin with profiling and multi-thread support
+ * sbt-android-mill - simple-build-tool multi-thread plugin with profiling
  *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
@@ -24,6 +24,9 @@ import sbt.Keys._
 import sbt._
 import stopwatch.Stopwatch
 
+/*
+ * don't use lazy val, stageFinalizerKey.key.label hung in deadlock 
+ */
 trait MillStage {
   /** stage stopwatch group */
   @volatile protected var profiling: Option[stopwatch.Stopwatch] = None
@@ -40,43 +43,48 @@ trait MillStage {
   /** stage settings */
   val settings: Seq[Project.Setting[_]]
   /** tag for logger */
-  lazy val tag = stageFinalizerKey.key.label
+  val tag = stageFinalizerKey.key.label
 
-  def stopwatchGroup = Mill.getStopwatchGroup(tag)
-  def stagePrepareTask = (streams) map {
-    (s) =>
-      val (minutes, seconds) = getRunTime
-      s.log.debug(header + " preparing")
-  }
-  def stageCorePre(log: sbt.Logger) {
-    profiling = Some(stopwatchGroup.start(tag))
-    val (minutes, seconds) = getRunTime
-    log.info(header + " start core")
-  }
-  def stageCorePost() {
-    profiling.foreach(_.stop)
-  }
-  def stageFinalizerTask = (streams) map {
-    (s) =>
-      s.log.debug(header + " finalizing sequence")
-      buildProcessEnd
-  }
   def buildProcessBegin() {
     MillStage.buildProcessProfiling = Some(Mill.stopwatchGroup.start("TOTAL"))
     Mill.buildStartTime = System.currentTimeMillis()
   }
   def buildProcessEnd() {
     MillStage.buildProcessProfiling.foreach(_.stop)
+    Mill.buildStartTime = 0
   }
-  protected def header = {
+  protected def header(tag: String = tag) = {
     val (minutes, seconds) = getRunTime
-    "%dm%ds >>> [%s:%d]".format(minutes, seconds, tag, Thread.currentThread.getId())
+    "%dm%ds >>> [%s:%d] ".format(minutes, seconds, tag, Thread.currentThread.getId())
   }
   protected def getRunTime(): (Long, Long) = {
     val millis = System.currentTimeMillis() - Mill.buildStartTime
     (TimeUnit.MILLISECONDS.toMinutes(millis), TimeUnit.MILLISECONDS.toSeconds(millis) -
       TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)))
   }
+  def stagePrepareTask = (streams) map ((s) => stagePrepare(s.log))
+  def stagePrepare(log: sbt.Logger) {
+    Mill.synchronized {
+      if (Mill.buildStartTime == 0)
+        buildProcessBegin()
+    }
+    log.debug(header() + "preparing")
+  }
+  def stageCorePre(log: sbt.Logger) {
+    profiling = Some(stopwatchGroup.start(tag))
+    log.info(header() + "start core")
+  }
+  def stageCorePost() {
+    profiling.foreach(_.stop)
+  }
+  def stageFinalizerTask = (streams) map ((s) => stageFinalizer(s.log))
+  def stageFinalizer(log: sbt.Logger) {
+    log.debug(header() + "finalizing sequence")
+    Mill.synchronized {
+      buildProcessEnd()
+    }
+  }
+  def stopwatchGroup = Mill.getStopwatchGroup(tag)
 }
 
 object MillStage {

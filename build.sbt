@@ -12,7 +12,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit", "-Xfatal-warn
 libraryDependencies ++= Seq(
     "org.digimead" %% "stopwatch-core" % "1.0-SNAPSHOT",
     "com.google.android.tools" % "ddmlib" % "r10",
-    "net.sf.proguard" % "proguard-base" % "4.6"
+    "net.sf.proguard" % "proguard-base" % "4.8"
 )
 
 sbtPlugin := true
@@ -30,3 +30,9 @@ site.settings
 sbt.source.align.Align.alignSettings
 
 resolvers += "stopwatch" at "http://sbt-android-mill.github.com/stopwatch/releases"
+
+scriptedLaunchOpts ++= {
+  import scala.collection.JavaConverters._
+  val args = Seq("-Xmx8196M","-Xms8196M")
+  management.ManagementFactory.getRuntimeMXBean().getInputArguments().asScala.filter(a => args.contains(a) || a.startsWith("-XX")).toSeq
+}

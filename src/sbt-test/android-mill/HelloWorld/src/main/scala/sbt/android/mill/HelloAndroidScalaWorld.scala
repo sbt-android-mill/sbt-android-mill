@@ -1,4 +1,4 @@
-package net.tokyoenvious.droid
+package sbt.android.mill
 
 import android.app.Activity
 import android.os.Bundle

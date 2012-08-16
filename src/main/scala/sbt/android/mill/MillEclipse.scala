@@ -1,5 +1,5 @@
 /**
- * sbt-android-mill android plugin with profiling and multi-thread support
+ * sbt-android-mill - simple-build-tool multi-thread plugin with profiling
  *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
@@ -26,5 +26,8 @@ object MillEclipse extends Mill {
     aapt.AAPT.settings ++
     compile.Compile.settings ++
     proguard.Proguard.settings ++
+    dx.DX.settings ++
+    device.Device.settings ++
+    device.Emulator.settings ++
     compositeSettings)
 }

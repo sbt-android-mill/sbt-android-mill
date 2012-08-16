@@ -29,10 +29,11 @@ object AAPT extends MillStage {
   val DefaultAAPTResourcesApkName = "resources.apk"
 
   lazy val settings: Seq[Project.Setting[_]] = Seq(
-    aaptName := DefaultAAPTName,
     aaptAPKName := DefaultAAPTResourcesApkName,
-    aaptPath <<= (platformToolsPath, aaptName)(_ / _),
     aaptAPKPath <<= (target, aaptAPKName)(_ / _),
+    aaptName := DefaultAAPTName,
+    aaptPackage <<= aaptPackageTask,
+    aaptPath <<= (platformToolsPath, aaptName)(_ / _),
     aaptStagePrepare <<= stagePrepareTask,
     aaptStagePrepare <<= aaptStagePrepare dependsOn (makeManagedJavaPath),
     aaptStageCore <<= aaptStageCoreTask,
@@ -42,7 +43,7 @@ object AAPT extends MillStage {
     sourceGenerators in Compile <+= aaptStageCore)
 
   def aaptStageCoreTask =
-    (manifestPackagePath, aaptPath, manifestPath, mainResPath, jarPathSDK, managedJavaPath, libraries, streams) map {
+    (manifestPackage, aaptPath, manifestPath, mainResPath, jarPathSDK, managedJavaPath, libraries, streams) map {
       (mPackage, aPath, mPath, resPath, jPath, javaPath, libraries, s) =>
         stageCorePre(s.log)
         val libraryResPathArgs = for (
@@ -74,5 +75,27 @@ object AAPT extends MillStage {
         val result = (javaPath ** "R.java").get
         stageCorePost()
         result
+    }
+  def aaptPackageTask: Project.Initialize[Task[File]] =
+    (aaptPath, manifestPath, mainResPath, mainAssetsPath, jarPathSDK, aaptAPKPath, libraries, streams) map {
+      (apPath, manPath, rPath, assetPath, jPath, resApkPath, apklibs, s) =>
+        stopwatchGroup(aaptPackage.key.label) {
+          val libraryResPathArgs = for (
+            lib <- apklibs;
+            d <- lib.resources.toSeq;
+            arg <- Seq("-S", d.absolutePath)
+          ) yield arg
+
+          val aapt = Seq(apPath.absolutePath, "package", "--auto-add-overlay", "-f",
+            "-M", manPath.head.absolutePath,
+            "-S", rPath.absolutePath,
+            "-A", assetPath.absolutePath,
+            "-I", jPath.absolutePath,
+            "-F", resApkPath.absolutePath) ++
+            libraryResPathArgs
+          s.log.debug("packaging: " + aapt.mkString(" "))
+          if (aapt.run(false).exitValue != 0) sys.error("error packaging resources")
+          resApkPath
+        }
     }
 }
