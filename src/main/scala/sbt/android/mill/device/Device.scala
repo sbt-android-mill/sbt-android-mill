@@ -28,6 +28,7 @@ object Device extends Target {
     adbTimeout := DefaultADBTimeout,
     reinstallKeepData := DefaultReinstallKeepData,
     deviceStagePrepare <<= targetStagePrepareTask(false),
+    deviceStagePrepare <<= deviceStagePrepare dependsOn (preStagePrepare),
     deviceStageCore <<= targetStageCoreTask(false),
     deviceStageCore <<= deviceStageCore dependsOn (deviceStagePrepare, targetStageReinstall(false)),
     deviceStageFinalizer <<= stageFinalizerTask,

@@ -25,6 +25,8 @@ import sbt.android.mill.MillKeys._
 import stopwatch.StopwatchGroup
 import java.lang.System
 import scala.xml.XML
+import scala.collection.mutable.Subscriber
+import stopwatch.Stopwatch
 
 /**
  * main plugin class
@@ -41,48 +43,66 @@ import scala.xml.XML
  * stage 9 - publish
  */
 abstract class Mill extends Plugin {
-  val millSettings: Seq[Project.Setting[_]]
-  def millConf = config("android-mill") extend (Compile)
-
-  lazy val compositeSettings: Seq[Project.Setting[_]] = MillSettings.defaultSettings ++
+  def projectSettings: Seq[Project.Setting[_]]
+  def compositeSettings: Seq[Project.Setting[_]] = MillSettings.defaultSettings ++
     MillSettings.overwriteSettings ++
     MillSettings.runtimeSettings ++
     MillSettings.delegateSettings ++
     MillSettings.derivativeSettings ++
-    Mill.settings ++
-    Mill.tasksSequence
-
+    Mill.projectSettings
 }
 
 object Mill {
   @volatile var buildStartTime = 0L
-  @volatile var profilingGroups = Seq[StopwatchGroup]()
-  val tasksSequence = Seq(
+  @volatile var totalStopwatch: Option[Stopwatch] = None
+  @volatile var profilingGroups: Seq[StopwatchGroup] = Seq()
+  val subscriber = new Subscriber[MillEvent, MillStage.type#Pub] {
+    def notify(pub: MillStage.type#Pub, event: MillEvent) = event match {
+      case MillStage.Event.MillStart(state) =>
+        val extracted = Project extract state
+        if (extracted.get(statisticsReset in millConf))
+          profilingGroups = Seq()
+        totalStopwatch = Some(stopwatchGroup.start("TOTAL"))
+        buildStartTime = System.currentTimeMillis()
+      case MillStage.Event.MillStop(state) =>
+        totalStopwatch.foreach(_.stop)
+    }
+  }
+  MillStage.subscribe(subscriber)
+
+  def tasksSequence = Seq(
+    // stage1 - prepare
+    // stage2
     aaptStageCore <<= aaptStageCore dependsOn (preStageCore),
+    // stage3
     aidlStageCore <<= aidlStageCore dependsOn (preStageCore),
+    // stage4
     compileStageCorePre <<= compileStageCorePre dependsOn (aaptStageCore, aidlStageCore),
-    packageConfig <<= packageConfigTask,
+    // stage5
     proguardStageCore <<= proguardStageCore dependsOn (compileStageCore),
+    // stage6
+    dxStageCore <<= dxStageCore dependsOn (proguardStageCore),
+    // package stage
     aaptPackage <<= aaptPackage dependsOn (makeAssetPath, dxStageCore),
+    packageConfig <<= packageConfig dependsOn (aaptPackage),
+    packageDebug <<= packageDebug dependsOn (packageConfig),
+    // install stage
     deviceStageCore <<= deviceStageCore dependsOn packageDebug,
     emulatorStageCore <<= emulatorStageCore dependsOn packageDebug)
-  /*
-   * dxStageCore depends on dxInput that takes as input proguardStageCore
-   * packageConfig depends on aaptPackage
-   * packageDebug depends on packageConfigTask
-   */
 
-  val settings = Seq(
+  def projectSettings = Seq(
+    statisticsReset := true,
     cleanApk <<= (packageApkPath) map (IO.delete(_)),
     copyNativeLibraries <<= copyNativeLibrariesTask,
     libraries <<= dependenciesTask,
     librariesSources <<= dependenciesSourcesTask,
     makeAssetPath <<= directory(mainAssetsPath),
     makeManagedJavaPath <<= directory(managedJavaPath),
+    packageConfig <<= packageConfigTask,
     packageDebug <<= packageTask(true),
-    packageDebug <<= packageDebug dependsOn (cleanApk, aaptPackage, copyNativeLibraries),
+    packageDebug <<= packageDebug dependsOn (cleanApk, copyNativeLibraries),
     packageRelease <<= packageTask(false),
-    packageRelease <<= packageRelease dependsOn (cleanApk, aaptPackage, copyNativeLibraries),
+    packageRelease <<= packageRelease dependsOn (cleanApk, copyNativeLibraries),
     sourceGenerators in Compile <+= librariesSources,
     statistics <<= statisticsTask)
 
@@ -180,7 +200,7 @@ object Mill {
   def directory(path: SettingKey[File]) = path map (IO.createDirectory(_))
   def dumpStopWatchStatistics(implicit log: Logger) = profilingGroups.sortBy(_.name).foreach {
     group =>
-      log.info("""process "%s" stopwatch statistics:""".format(group.name))
+      log.info("""group "%s" stopwatch statistics:""".format(group.name))
       group.names.toSeq.sorted.foreach(name =>
         log.info("  " + group.snapshot(name).toShortString))
   }
@@ -206,5 +226,5 @@ object Mill {
   def isWindows = System.getProperty("os.name").startsWith("Windows")
   def manifest(mpath: File) = xml.XML.loadFile(mpath)
   def osBatchSuffix = if (isWindows) ".bat" else ""
-  def stopwatchGroup = Mill.getStopwatchGroup("core")
+  def stopwatchGroup = Mill.getStopwatchGroup("mill")
 }

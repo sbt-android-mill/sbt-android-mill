@@ -21,7 +21,8 @@ package sbt.android.mill
 import sbt._
 
 object MillEclipse extends Mill {
-  lazy val millSettings = inConfig(millConf)(pre.Pre.settings ++
+  override def projectSettings = inConfig(MillKeys.millConf)(compositeSettings ++
+    pre.Pre.settings ++
     aidl.AIDL.settings ++
     aapt.AAPT.settings ++
     compile.Compile.settings ++
@@ -29,5 +30,6 @@ object MillEclipse extends Mill {
     dx.DX.settings ++
     device.Device.settings ++
     device.Emulator.settings ++
-    compositeSettings)
+    ndk.NDK.settings ++
+    Mill.tasksSequence) // always last!!!, at least after all tasks
 }

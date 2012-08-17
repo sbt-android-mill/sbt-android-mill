@@ -33,41 +33,41 @@ object AIDL extends MillStage {
     aidlName := DefaultAIDLName,
     aidlPath <<= (platformToolsPath, aidlName)(_ / _),
     aidlStagePrepare <<= stagePrepareTask,
+    aidlStagePrepare <<= aidlStagePrepare dependsOn (preStagePrepare),
     aidlStageCore <<= aidlStageCoreTask,
     aidlStageCore <<= aidlStageCore dependsOn aidlStagePrepare,
     aidlStageFinalizer <<= stageFinalizerTask,
     aidlStageFinalizer <<= aidlStageFinalizer dependsOn (aidlStagePrepare, aidlStageCore),
     sourceGenerators in Compile <+= aidlStageCore)
-    
+
   def aidlStageCoreTask =
     (sourceDirectories, aidlPath, platformPath, managedJavaPath, javaSource, streams) map {
       (sDirs, aidlPath, platformPath, javaPath, jSource, s) =>
-        stageCorePre(s.log)
-        val aidlPaths = sDirs.map(_ ** "*.aidl").reduceLeft(_ +++ _).get
-        val files = if (aidlPaths.isEmpty) {
-          s.log.debug(header() + "no AIDL files found, skipping")
-          Nil
-        } else {
-          val processor = aidlPaths.map { ap =>
-            aidlPath.absolutePath ::
-              "-p" + (platformPath / "framework.aidl").absolutePath ::
-              "-o" + javaPath.absolutePath ::
-              "-I" + jSource.absolutePath ::
-              ap.absolutePath :: Nil
-          }.foldLeft(None.asInstanceOf[Option[ProcessBuilder]]) { (f, s) =>
-            f match {
-              case None => Some(s)
-              case Some(first) => Some(first #&& s)
-            }
-          }.get
-          s.log.debug(header() + "generating aidl " + processor)
-          processor !
+        task(s.log) {
+          val aidlPaths = sDirs.map(_ ** "*.aidl").reduceLeft(_ +++ _).get
+          if (aidlPaths.isEmpty) {
+            s.log.debug(header() + "no AIDL files found, skipping")
+            Nil
+          } else {
+            val processor = aidlPaths.map { ap =>
+              aidlPath.absolutePath ::
+                "-p" + (platformPath / "framework.aidl").absolutePath ::
+                "-o" + javaPath.absolutePath ::
+                "-I" + jSource.absolutePath ::
+                ap.absolutePath :: Nil
+            }.foldLeft(None.asInstanceOf[Option[ProcessBuilder]]) { (f, s) =>
+              f match {
+                case None => Some(s)
+                case Some(first) => Some(first #&& s)
+              }
+            }.get
+            s.log.debug(header() + "generating aidl " + processor)
+            processor !
 
-          val rPath = javaPath ** "R.java"
-          javaPath ** "*.java" --- (rPath) get
+            val rPath = javaPath ** "R.java"
+            javaPath ** "*.java" --- (rPath) get
+          }
         }
-        stageCorePost()
-        files
     }
   def aidlStageTask =
     (streams) map {

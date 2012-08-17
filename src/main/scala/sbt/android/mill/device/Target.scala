@@ -19,8 +19,11 @@ package sbt.android.mill.device
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.collection.mutable.Subscriber
+
 import sbt._
 import sbt.Keys._
+import sbt.android.mill.MillEvent
 import sbt.android.mill.MillKeys._
 import sbt.android.mill.MillStage
 import sbt.android.mill.util.ReduceLogLevelWrapper
@@ -31,24 +34,33 @@ trait Target extends MillStage {
   protected val unableToConnect = new AtomicBoolean(false)
   val DefaultADBTimeout = 30000 // 30s
   val DefaultReinstallKeepData = true
-
-  def targetStagePrepareTask(emulator: Boolean) = (adbPath, adbTimeout, streams) map {
-    (adbPath, timeout, s) =>
-      super.stagePrepare(s.log)
-      Util.thread { connectToTarget(adbPath.getAbsolutePath(), emulator, s.log, timeout) }; ()
+  val subscriber = new Subscriber[MillEvent, MillStage.type#Pub] {
+    def notify(pub: MillStage.type#Pub, event: MillEvent) = event match {
+      case MillStage.Event.MillStart(state) =>
+        unableToConnect.set(false)
+      case MillStage.Event.MillStop(state) =>
+    }
   }
-  def targetStageCoreTask(emulator: Boolean) =
+  MillStage.subscribe(subscriber)
+
+  def targetStagePrepareTask(emulator: Boolean) =
+    (adbPath, adbTimeout, state, streams) map {
+      (adbPath, timeout, state, streams) =>
+        super.stagePrepare(state, streams.log)
+        Util.thread { connectToTarget(adbPath.getAbsolutePath(), emulator, streams.log, timeout) }; ()
+    }
+  def targetStageCoreTask(emulator: Boolean): Project.Initialize[Task[Unit]] =
     (adbPath, packageApkPath, adbTimeout, streams) map { (adbPath, apk, timeout, s) =>
-      stageCorePre(s.log)
-      val target = if (emulator) "emulator" else "device"
-      s.log.info(header() + "install " + apk.getAbsolutePath() + " to " + target)
-      adb(timeout) match {
-        case Some(adb) =>
-          Target.command(adbPath.getAbsolutePath(), emulator, s.log, () => header(), "install", "-r ", apk.getAbsolutePath())
-        case None =>
-          s.log.error(header() + "unable to install " + apk.getAbsolutePath() + ", " + target + " not found")
+      task(s.log) {
+        val target = if (emulator) "emulator" else "device"
+        s.log.info(header() + "install " + apk.getAbsolutePath() + " to " + target)
+        adb(timeout) match {
+          case Some(adb) =>
+            Target.command(adbPath.getAbsolutePath(), emulator, s.log, () => header(), "install", "-r ", apk.getAbsolutePath())
+          case None =>
+            s.log.error(header() + "unable to install " + apk.getAbsolutePath() + ", " + target + " not found")
+        }
       }
-      stageCorePost()
     }
   def targetStageReinstall(emulator: Boolean) = (adbPath, manifestPackage, adbTimeout, reinstallKeepData, streams) map {
     (adbPath, manifestPackage, timeout, reinstallKeepData, streams) =>
@@ -96,7 +108,7 @@ trait Target extends MillStage {
           Target.command(adbPath, emulator, log, () => header(), "wait-for-device") match {
             case (true, output) =>
               log.info(header() + "connected to " + target)
-              adb = Some(new ADB())
+              adb = Some(new ADB)
               unableToConnect.synchronized { unableToConnect.notifyAll() }
             case (false, output) =>
               log.error(header() + "unable to connect to " + target)

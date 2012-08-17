@@ -22,8 +22,11 @@ import sbt._
 import sbt.inc.Analysis
 
 object MillKeys {
+  def millConf = config("android-mill") extend (Compile)
+
   // core sbt.android.mill
   val statistics = TaskKey[Unit]("statistics", "Show execution statistics")
+  val statisticsReset = SettingKey[Boolean]("statistics-reset", "Reset profiling statistics before new task sequence")
   // stage1 sbt.android.mill.pre
   val preStagePrepare = TaskKey[Unit]("pre-prepare", "First task in sequence before build project.")
   val preStageCore = TaskKey[Unit]("pre-core", "Core task for preparing environment before build project.")
@@ -86,6 +89,27 @@ object MillKeys {
   val emulatorStageFinalizer = TaskKey[Unit]("install-emulator", "Install debug package on emulator.")
   val emulatorStageUninstall = TaskKey[Unit]("uninstall-emulator", "Uninstall package on emulator.")
   val emulatorStageUninstallSoft = TaskKey[Unit]("uninstall-emulator-soft", "Uninstall package on emulator, keep the data and cache directories.")
+  // sbt.android.mill.ndk
+  val ndkBasePath = SettingKey[File]("ndk-output-path", "Base path for build process where 'jni' folder exists and optionaly 'obj', 'libs'")
+  val ndkBuildName = SettingKey[String]("ndk-build-name", "Name for the 'ndk-build' tool")
+  val ndkBuildPath = SettingKey[File]("ndk-build-path", "Path to the 'ndk-build' tool")
+  val ndkClean = TaskKey[Unit]("ndk-clean", "Clean resources built from native C/C++ sources.")
+  val ndkEnvs = SettingKey[Seq[String]]("ndk-envs", "List of environment variables to check for the NDK.")
+  val ndkJavah = TaskKey[Unit]("ndk-javah", "Produce C headers from Java classes with native methods.")
+  val ndkJavahClean = TaskKey[Unit]("ndk-javah-clean", "Clean C headers built from Java classes with native methods.")
+  val ndkJavahName = SettingKey[String]("ndk-javah-name", "The name of the javah command for generating JNI headers.")
+  val ndkJavahPath = SettingKey[String]("ndk-javah-path", "The path to the javah executable.")
+  val ndkJavahOutputDirectory = SettingKey[File]("ndk-javah-output-directory", "The directory where JNI headers are written to.")
+  val ndkJavahOutputFile = SettingKey[Option[File]]("ndk-javah-output-file", "Filename for the generated C header, relative to javah-output-directory.")
+  val ndkJavahOutputEnv = SettingKey[String]("ndk-javah-output-env", "Name of the make environment variable to bind to the javah-output-directory.")
+  val ndkJNIClasses = SettingKey[Seq[String]]("ndk-jni-classes", "Fully qualified names of classes with native methods for which JNI headers are to be generated.")
+  val ndkJNIDirectoryName = SettingKey[String]("ndk-jni-directory-name", "Directory name for native sources.")
+  val ndkJNIDirectoryPath = SettingKey[File]("ndk-jni-directory-path", "Path to native sources. (with Android.mk)")
+  val ndkObjectDirectoryName = SettingKey[String]("ndk-object-name", "Directory name for compiled native objects.")
+  val ndkObjectDirectoryPath = SettingKey[File]("ndk-object-path")
+  val ndkStagePrepare = TaskKey[Unit]("ndk-prepare", "Prepare for compilation native C/C++ sources.")
+  val ndkStageCore = TaskKey[Unit]("ndk-core", "Core task for compilation native C/C++ sources.")
+  val ndkStageFinalizer = TaskKey[Unit]("ndk-build", "Compile native C/C++ sources.")
 
   /** Names */
   val adbName = SettingKey[String]("adb-name")

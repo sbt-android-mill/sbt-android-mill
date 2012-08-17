@@ -42,6 +42,7 @@ object Proguard extends MillStage {
     proguardExclude <<= proguardExcludeTask,
     proguardInJars <<= proguardInJarsTask,
     proguardStagePrepare <<= stagePrepareTask,
+    proguardStagePrepare <<= proguardStagePrepare dependsOn (preStagePrepare),
     proguardStageCore <<= proguardStageCoreTask,
     proguardStageCore <<= proguardStageCore dependsOn proguardStagePrepare,
     proguardStageFinalizer <<= stageFinalizerTask,
@@ -52,32 +53,31 @@ object Proguard extends MillStage {
       proguardProjectJarPath, jarPathSDK, proguardOption) map {
         (proguardEnabled, proguardOptimizations, classDirectory, proguardInJars, streams,
         classesMinJarPath, jarPathSDK, proguardOption) =>
-          stageCorePre(streams.log)
-          val result = if (proguardEnabled) {
-            val optimizationOptions = if (proguardOptimizations.isEmpty) Seq("-dontoptimize") else proguardOptimizations
-            val manifestr = List("!META-INF/MANIFEST.MF", "R.class", "R$*.class",
-              "TR.class", "TR$.class", "library.properties")
-            val sep = JFile.pathSeparator
-            val inJars = ("\"" + classDirectory.absolutePath + "\"") +:
-              proguardInJars.map("\"" + _ + "\"" + manifestr.mkString("(", ",!**/", ")"))
+          task(streams.log) {
+            if (proguardEnabled) {
+              val optimizationOptions = if (proguardOptimizations.isEmpty) Seq("-dontoptimize") else proguardOptimizations
+              val manifestr = List("!META-INF/MANIFEST.MF", "R.class", "R$*.class",
+                "TR.class", "TR$.class", "library.properties")
+              val sep = JFile.pathSeparator
+              val inJars = ("\"" + classDirectory.absolutePath + "\"") +:
+                proguardInJars.map("\"" + _ + "\"" + manifestr.mkString("(", ",!**/", ")"))
 
-            val args = (
-              "-injars" :: inJars.mkString(sep) ::
-              "-outjars" :: "\"" + classesMinJarPath.absolutePath + "\"" ::
-              "-libraryjars" :: jarPathSDK.get.map("\"" + _ + "\"").mkString(sep) ::
-              Nil) ++ optimizationOptions ++ proguardOption
-            streams.log.debug("executing proguard: " + (for (i <- 0 until args.size) yield { "arg" + (i + 1) + ": " + args(i) }).mkString("\n"))
-            val config = new ProGuardConfiguration
-            new ConfigurationParser(args.toArray[String], new Properties).parse(config)
-            streams.log.debug("executing proguard: " + args.mkString("\n"))
-            new ProGuard(config).execute
-            Some(classesMinJarPath)
-          } else {
-            streams.log.info("Skipping Proguard")
-            None
+              val args = (
+                "-injars" :: inJars.mkString(sep) ::
+                "-outjars" :: "\"" + classesMinJarPath.absolutePath + "\"" ::
+                "-libraryjars" :: jarPathSDK.get.map("\"" + _ + "\"").mkString(sep) ::
+                Nil) ++ optimizationOptions ++ proguardOption
+              streams.log.debug("executing proguard: " + (for (i <- 0 until args.size) yield { "arg" + (i + 1) + ": " + args(i) }).mkString("\n"))
+              val config = new ProGuardConfiguration
+              new ConfigurationParser(args.toArray[String], new Properties).parse(config)
+              streams.log.debug("executing proguard: " + args.mkString("\n"))
+              new ProGuard(config).execute
+              Some(classesMinJarPath)
+            } else {
+              streams.log.info("Skipping Proguard")
+              None
+            }
           }
-          stageCorePost()
-          result
       }
   def proguardExcludeTask = (jarPathSDK, classDirectory, resourceDirectory) map {
     (libPath, classDirectory, resourceDirectory) =>

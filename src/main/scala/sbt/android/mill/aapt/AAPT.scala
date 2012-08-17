@@ -35,7 +35,7 @@ object AAPT extends MillStage {
     aaptPackage <<= aaptPackageTask,
     aaptPath <<= (platformToolsPath, aaptName)(_ / _),
     aaptStagePrepare <<= stagePrepareTask,
-    aaptStagePrepare <<= aaptStagePrepare dependsOn (makeManagedJavaPath),
+    aaptStagePrepare <<= aaptStagePrepare dependsOn (preStagePrepare, makeManagedJavaPath),
     aaptStageCore <<= aaptStageCoreTask,
     aaptStageCore <<= aaptStageCore dependsOn aaptStagePrepare,
     aaptStageFinalizer <<= stageFinalizerTask,
@@ -45,41 +45,40 @@ object AAPT extends MillStage {
   def aaptStageCoreTask =
     (manifestPackage, aaptPath, manifestPath, mainResPath, jarPathSDK, managedJavaPath, libraries, streams) map {
       (mPackage, aPath, mPath, resPath, jPath, javaPath, libraries, s) =>
-        stageCorePre(s.log)
-        val libraryResPathArgs = for (
-          lib <- libraries;
-          d <- lib.resources.toSeq;
-          arg <- Seq("-S", d.absolutePath)
-        ) yield arg
+        task(s.log) {
+          val libraryResPathArgs = for (
+            lib <- libraries;
+            d <- lib.resources.toSeq;
+            arg <- Seq("-S", d.absolutePath)
+          ) yield arg
 
-        val libraryAssetPathArgs = for (
-          lib <- libraries;
-          d <- lib.assets.toSeq;
-          arg <- Seq("-A", d.absolutePath)
-        ) yield arg
+          val libraryAssetPathArgs = for (
+            lib <- libraries;
+            d <- lib.assets.toSeq;
+            arg <- Seq("-A", d.absolutePath)
+          ) yield arg
 
-        def runAapt(`package`: String, args: String*) {
-          val aapt = Seq(aPath.absolutePath, "package", "--auto-add-overlay", "-m",
-            "--custom-package", `package`,
-            "-M", mPath.head.absolutePath,
-            "-S", resPath.absolutePath,
-            "-I", jPath.absolutePath,
-            "-J", javaPath.absolutePath) ++
-            args ++
-            libraryResPathArgs ++
-            libraryAssetPathArgs
-          if (aapt.run(false).exitValue != 0) sys.error("error generating resources")
+          def runAapt(`package`: String, args: String*) {
+            val aapt = Seq(aPath.absolutePath, "package", "--auto-add-overlay", "-m",
+              "--custom-package", `package`,
+              "-M", mPath.head.absolutePath,
+              "-S", resPath.absolutePath,
+              "-I", jPath.absolutePath,
+              "-J", javaPath.absolutePath) ++
+              args ++
+              libraryResPathArgs ++
+              libraryAssetPathArgs
+            if (aapt.run(false).exitValue != 0) sys.error("error generating resources")
+          }
+          runAapt(mPackage)
+          libraries.foreach(lib => runAapt(lib.pkgName, "--non-constant-id"))
+          javaPath ** "R.java" get
         }
-        runAapt(mPackage)
-        libraries.foreach(lib => runAapt(lib.pkgName, "--non-constant-id"))
-        val result = (javaPath ** "R.java").get
-        stageCorePost()
-        result
     }
   def aaptPackageTask: Project.Initialize[Task[File]] =
     (aaptPath, manifestPath, mainResPath, mainAssetsPath, jarPathSDK, aaptAPKPath, libraries, streams) map {
       (apPath, manPath, rPath, assetPath, jPath, resApkPath, apklibs, s) =>
-        stopwatchGroup(aaptPackage.key.label) {
+        task(s.log, aaptPackage.key.label) {
           val libraryResPathArgs = for (
             lib <- apklibs;
             d <- lib.resources.toSeq;

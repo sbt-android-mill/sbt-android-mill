@@ -1,0 +1,6 @@
+> android-mill:package-debug
+$ exists target/classes.dex
+$ exists target/classes.min.jar
+$ exists target/resources.apk
+$ exists target/simple-1.0.apk
+$ exists target/scala-2.8.2/src_managed/main/java/sbt/android/mill/R.java

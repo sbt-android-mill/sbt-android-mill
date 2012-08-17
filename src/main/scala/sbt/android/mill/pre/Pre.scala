@@ -27,17 +27,15 @@ object Pre extends MillStage {
   lazy val stageCoreKey = preStageCore
   lazy val stageFinalizerKey = preStageFinalizer
   lazy val settings: Seq[Project.Setting[_]] = Seq(
-    preStagePrepare <<= stagePrepareTask,
+    preStagePrepare <<= preStagePrepareTask,
     preStageCore <<= preStageCoreTask,
     preStageCore <<= preStageCore dependsOn preStagePrepare,
     preStageFinalizer <<= stageFinalizerTask,
     preStageFinalizer <<= preStageFinalizer dependsOn (preStagePrepare, preStageCore))
 
-  def preStageCoreTask =
-    (streams) map {
-      (s) =>
-        stageCorePre(s.log)
-        stopwatch.Stopwatch.disposeAll
-        stageCorePost()
-    }
+  def preStagePrepareTask = (state, streams) map ((state, streams) =>
+    stagePrepare(state, streams.log, true))
+  def preStageCoreTask = (streams) map ((s) => task(s.log) {
+    stopwatch.Stopwatch.disposeAll
+  })
 }

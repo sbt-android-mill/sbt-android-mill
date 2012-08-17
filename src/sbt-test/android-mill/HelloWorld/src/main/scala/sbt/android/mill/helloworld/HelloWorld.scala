@@ -1,9 +1,9 @@
-package sbt.android.mill
+package sbt.android.mill.helloworld
 
 import android.app.Activity
 import android.os.Bundle
 
-class HelloAndroidScalaWorld extends Activity
+class HelloWorld extends Activity
 {
     /** Called when the activity is first created. */
     override def onCreate(savedInstanceState : Bundle)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, HelloWorldAndroidJNIActivity!</string>
+    <string name="app_name">HelloWorldAndroidJNI</string>
+    <string name="value1">value 1</string>
+    <string name="value2">value 2</string>
+    <string name="result">result</string>
+
+</resources>

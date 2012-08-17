@@ -29,6 +29,7 @@ object Compile extends MillStage {
   lazy val stageFinalizerKey = compileStageFinalizer
   lazy val settings: Seq[Project.Setting[_]] = Seq(
     compileStagePrepare <<= stagePrepareTask,
+    compileStagePrepare <<= compileStagePrepare dependsOn (preStagePrepare),
     compileStageCorePre <<= compileStageCorePreTask,
     compileStageCore <<= compileStageCoreTask,
     compileStageCore <<= compileStageCore dependsOn (compileStagePrepare, compile in Configurations.Compile),
@@ -36,6 +37,6 @@ object Compile extends MillStage {
     compileStageFinalizer <<= compileStageFinalizer dependsOn compileStageCore,
     compile in Configurations.Compile <<= compile in Configurations.Compile dependsOn compileStageCorePre)
 
-  def compileStageCorePreTask = (streams) map ((s) => stageCorePre(s.log))
-  def compileStageCoreTask = (streams) map ((s) => stageCorePost())
+  def compileStageCorePreTask = (streams) map ((s) => taskPre(s.log))
+  def compileStageCoreTask = (streams) map ((s) => taskPost())
 }

@@ -31,6 +31,7 @@ object Emulator extends MillStage with Target {
     adbTimeout := DefaultADBTimeout,
     reinstallKeepData := DefaultReinstallKeepData,
     emulatorStagePrepare <<= targetStagePrepareTask(true),
+    emulatorStagePrepare <<= emulatorStagePrepare dependsOn (preStagePrepare),
     emulatorStageCore <<= targetStageCoreTask(true),
     emulatorStageCore <<= emulatorStageCore dependsOn (emulatorStagePrepare, targetStageReinstall(true)),
     emulatorStageFinalizer <<= stageFinalizerTask,

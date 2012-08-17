@@ -20,16 +20,20 @@ package sbt.android.mill
 
 import java.util.concurrent.TimeUnit
 
-import sbt.Keys._
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.Publisher
+import scala.collection.mutable.SynchronizedMap
+
 import sbt._
+import sbt.Keys._
 import stopwatch.Stopwatch
 
 /*
  * don't use lazy val, stageFinalizerKey.key.label hung in deadlock 
  */
 trait MillStage {
-  /** stage stopwatch group */
-  @volatile protected var profiling: Option[stopwatch.Stopwatch] = None
+  /** stage tasks stopwatch group */
+  protected val profiling = new HashMap[String, Stopwatch]() with SynchronizedMap[String, Stopwatch]
   /**
    * task that prepare something for stageCoreKey, for example start emulator
    * may be called multiple times, must provide guards against concurrent calls from different threads
@@ -45,14 +49,30 @@ trait MillStage {
   /** tag for logger */
   val tag = stageFinalizerKey.key.label
 
-  def buildProcessBegin() {
-    MillStage.buildProcessProfiling = Some(Mill.stopwatchGroup.start("TOTAL"))
-    Mill.buildStartTime = System.currentTimeMillis()
+  def stagePrepareTask = (state, streams) map ((state, streams) => stagePrepare(state, streams.log))
+  def stagePrepare(state: State, log: sbt.Logger, firstPrepareInSequence: Boolean = false) {
+    Mill.synchronized { if (firstPrepareInSequence) MillStage.publish(MillStage.Event.MillStart(state)) }
+    log.debug(header() + "preparing")
   }
-  def buildProcessEnd() {
-    MillStage.buildProcessProfiling.foreach(_.stop)
-    Mill.buildStartTime = 0
+  def taskPre(log: sbt.Logger, tag: String = tag) {
+    profiling(tag) = stopwatchGroup.start(tag)
+    log.info(header(tag) + "start task")
   }
+  def taskPost(tag: String = tag) {
+    profiling.get(tag).foreach(_.stop)
+  }
+  def task[F](log: sbt.Logger, tag: String = tag)(f: => F): F = {
+    taskPre(log: sbt.Logger, tag)
+    val result = f
+    taskPost(tag)
+    result
+  }
+  def stageFinalizerTask = (state, streams) map ((state, streams) => stageFinalizer(state, streams.log))
+  def stageFinalizer(state: State, log: sbt.Logger) {
+    log.debug(header() + "finalizing sequence")
+    Mill.synchronized { MillStage.publish(MillStage.Event.MillStop(state)) }
+  }
+  def stopwatchGroup = Mill.getStopwatchGroup(tag)
   protected def header(tag: String = tag) = {
     val (minutes, seconds) = getRunTime
     "%dm%ds >>> [%s:%d] ".format(minutes, seconds, tag, Thread.currentThread.getId())
@@ -62,31 +82,15 @@ trait MillStage {
     (TimeUnit.MILLISECONDS.toMinutes(millis), TimeUnit.MILLISECONDS.toSeconds(millis) -
       TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)))
   }
-  def stagePrepareTask = (streams) map ((s) => stagePrepare(s.log))
-  def stagePrepare(log: sbt.Logger) {
-    Mill.synchronized {
-      if (Mill.buildStartTime == 0)
-        buildProcessBegin()
-    }
-    log.debug(header() + "preparing")
-  }
-  def stageCorePre(log: sbt.Logger) {
-    profiling = Some(stopwatchGroup.start(tag))
-    log.info(header() + "start core")
-  }
-  def stageCorePost() {
-    profiling.foreach(_.stop)
-  }
-  def stageFinalizerTask = (streams) map ((s) => stageFinalizer(s.log))
-  def stageFinalizer(log: sbt.Logger) {
-    log.debug(header() + "finalizing sequence")
-    Mill.synchronized {
-      buildProcessEnd()
-    }
-  }
-  def stopwatchGroup = Mill.getStopwatchGroup(tag)
 }
 
-object MillStage {
-  @volatile var buildProcessProfiling: Option[Stopwatch] = None
+sealed trait MillEvent
+
+object MillStage extends Publisher[MillEvent] {
+  override protected def publish(event: MillEvent) =
+    super.publish(event)
+  object Event {
+    case class MillStart(state: State) extends MillEvent
+    case class MillStop(state: State) extends MillEvent
+  }
 }
