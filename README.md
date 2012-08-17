@@ -1,7 +1,17 @@
 sbt-android-mill
 ================
 
+sbt-android-mill - simple-build-tool multi-thread plugin with profiling
+
 If you want improve it, please send mail to sbt-android-mill at digimead.org. You will be added to the group and to authors.
+
+## packages - build stages relation
+
+![packages structure](https://github.com/sbt-android-mill/sbt-android-mill/blob/master/notes/build-sbt-android-mill.png?raw=true)
+
+## workflow / structure
+
+![packages structure](https://github.com/sbt-android-mill/sbt-android-mill/blob/master/notes/sbt-android-mill.png?raw=true)
 
 AUTHORS
 -------
