@@ -191,6 +191,34 @@
          style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
          transform="matrix(-0.8,0,0,-0.8,-10,0)" />
     </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Lend-6"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3772-5"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.8,0,0,-0.8,-10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Lend-8"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3772-8"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.8,0,0,-0.8,-10,0)" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -199,9 +227,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="704.67236"
-     inkscape:cy="362.84301"
+     inkscape:zoom="1.979899"
+     inkscape:cx="553.43444"
+     inkscape:cy="293.47988"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -1239,8 +1267,8 @@
          x="805.21069"
          y="677.9411"
          id="tspan3324"><tspan
-   style="fill:#d40000"
-   id="tspan9808">do not attach</tspan> your tasks here, this group of tasks</tspan><tspan
+   style="fill:#d4aa00"
+   id="tspan4366">attach your tasks here carefully</tspan>, this group of tasks</tspan><tspan
          sodipodi:role="line"
          x="805.21069"
          y="690.4411"
@@ -1727,11 +1755,10 @@
        transform="matrix(-0.32332051,-0.94628952,0.94628952,-0.32332051,0,0)" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend-2)"
-       d="m 301.42857,591.95163 10,-35.71429"
+       d="m 295.36765,893.14826 10,-35.71429"
        id="path10828"
        inkscape:connector-type="polyline"
-       inkscape:connector-curvature="0"
-       transform="translate(0,308.2677)" />
+       inkscape:connector-curvature="0" />
     <text
        xml:space="preserve"
        style="font-size:16px;font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:AR PL UMing HK;-inkscape-font-specification:AR PL UMing HK Light"
@@ -1747,14 +1774,14 @@
     <text
        xml:space="preserve"
        style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Comic Sans MS;-inkscape-font-specification:Comic Sans MS"
-       x="281.59073"
-       y="916.11707"
+       x="284.11612"
+       y="902.98511"
        id="text4772-1"
        sodipodi:linespacing="125%"
        inkscape:transform-center-y="-4.0771484"><tspan
          sodipodi:role="line"
-         x="281.59073"
-         y="916.11707"
+         x="284.11612"
+         y="902.98511"
          id="tspan11053">stage</tspan></text>
     <g
        id="g11642">
@@ -1886,6 +1913,83 @@
        style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1, 1;stroke-dashoffset:0;marker-start:none;marker-mid:none;marker-end:url(#Arrow1Lend)"
        d="m 379.28571,429.50505 18.57143,63.57143"
        id="path6364-3"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Comic Sans MS;-inkscape-font-specification:Comic Sans MS"
+       x="87.818069"
+       y="711.02814"
+       id="text6069-5"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan6071-0"
+         x="87.818069"
+         y="711.02814"
+         style="text-align:center;text-anchor:middle">synchronous <tspan
+   style="font-weight:bold;-inkscape-font-specification:Comic Sans MS Bold"
+   id="tspan4270">core</tspan> tasks</tspan><tspan
+         sodipodi:role="line"
+         x="87.818069"
+         y="723.52814"
+         style="font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS"
+         id="tspan6119-3"><tspan
+   id="tspan4272"
+   style="font-style:italic;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS Bold Italic"><tspan
+   style="fill:#0000ff"
+   id="tspan6121-5">nnn</tspan>StageCore </tspan>- running one by one,</tspan><tspan
+         sodipodi:role="line"
+         x="87.818069"
+         y="736.02814"
+         style="font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS"
+         id="tspan4276">contains a primary stage task</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:0.99999999, 0.99999999;stroke-dashoffset:0;marker-start:none;marker-mid:none;marker-end:url(#Arrow1Lend)"
+       d="m 112.98688,696.02822 27.14287,-35.00001"
+       id="path6364-3-2"
+       inkscape:connector-type="polyline"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Comic Sans MS;-inkscape-font-specification:Comic Sans MS"
+       x="444.57227"
+       y="854.32129"
+       id="text6069-5-6"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan6071-0-4"
+         x="444.57227"
+         y="854.32129"
+         style="text-align:center;text-anchor:middle"><tspan
+   style="font-weight:bold;-inkscape-font-specification:Comic Sans MS Bold"
+   id="tspan4348"><tspan
+   style="font-weight:normal;fill:#ff2a2a;-inkscape-font-specification:Comic Sans MS"
+   id="tspan4350">standalone</tspan> finalizer</tspan> tasks</tspan><tspan
+         sodipodi:role="line"
+         x="444.57227"
+         y="866.82129"
+         style="font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS"
+         id="tspan6119-3-6"><tspan
+   id="tspan4272-5"
+   style="font-style:italic;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS Bold Italic"><tspan
+   style="fill:#0000ff"
+   id="tspan6121-5-5">nnn</tspan>StageFinalizer </tspan>- final task in all sequence,</tspan><tspan
+         sodipodi:role="line"
+         x="444.57227"
+         y="879.32129"
+         style="font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS"
+         id="tspan4362">called by user or user tasks</tspan><tspan
+         sodipodi:role="line"
+         x="444.57227"
+         y="891.82129"
+         style="font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;-inkscape-font-specification:Comic Sans MS"
+         id="tspan4276-3" /></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1, 1;stroke-dashoffset:0;marker-start:none;marker-mid:none;marker-end:url(#Arrow1Lend)"
+       d="m 474.87233,846.84678 18.57143,-37.14286"
+       id="path6364-3-2-7"
        inkscape:connector-type="polyline"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
