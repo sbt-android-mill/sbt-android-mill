@@ -1,4 +1,6 @@
 /**
+ * sbt-android-mill - simple-build-tool multi-thread plugin with profiling
+ *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +51,7 @@ object NDK extends MillStage {
   /** The make environment variable name for the javah generated header directory. */
   val DefaultJavahOutputEnv = "SBT_MANAGED_JNI_INCLUDE"
 
-  lazy val settings = Seq(
+  val settings = Seq(
     cleanFiles <+= ndkObjectDirectoryPath,
     ndkBuildName := DefaultNdkBuildName,
     ndkBuildPath <<= ndkBuildPathTask,

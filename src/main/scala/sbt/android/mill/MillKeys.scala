@@ -76,19 +76,28 @@ object MillKeys {
    * step 7 aaptPackage
    * step 8 packageTask
    */
-  // sbt.android.mill.device
-  val adbTimeout = SettingKey[Int]("connection-timeout", "Time in milliseconds for 'adb wait-for-device' and related functions")
-  val reinstallKeepData = SettingKey[Boolean]("reinstall-keep-data", "Keep the data and cache directories while reinstall.")
-  val deviceStagePrepare = TaskKey[Unit]("install-device-prepare", "Prepare for installation debug package on device.")
-  val deviceStageCore = TaskKey[Unit]("install-device-core", "Core task for installation debug package on device.")
-  val deviceStageFinalizer = TaskKey[Unit]("install-device", "Install debug package on device.")
-  val deviceStageUninstall = TaskKey[Unit]("uninstall-device", "Uninstall package on device.")
-  val deviceStageUninstallSoft = TaskKey[Unit]("uninstall-device-soft", "Uninstall package on device, keep the data and cache directories.")
-  val emulatorStagePrepare = TaskKey[Unit]("install-emulator-prepare", "Prepare for installation debug package on emulator.")
-  val emulatorStageCore = TaskKey[Unit]("install-emulator-core", "Core task for installation debug package on emulator.")
-  val emulatorStageFinalizer = TaskKey[Unit]("install-emulator", "Install debug package on emulator.")
-  val emulatorStageUninstall = TaskKey[Unit]("uninstall-emulator", "Uninstall package on emulator.")
-  val emulatorStageUninstallSoft = TaskKey[Unit]("uninstall-emulator-soft", "Uninstall package on emulator, keep the data and cache directories.")
+  // sbt.android.mill.target
+  val targetADBName = SettingKey[String]("target-adb-name")
+  val targetADBPath = SettingKey[File]("target-adb-path")
+  val targetADBTimeout = SettingKey[Int]("target-connection-timeout", "Time in milliseconds for 'adb wait-for-device' and related functions.")
+  val targetADBLogLevel = SettingKey[Level.Value]("target-log-level", "Maximum adb log level.")
+  val targetReinstallKeep = SettingKey[Boolean]("target-reinstall-keep", "Keep the data and cache directories while reinstall.")
+  // sbt.android.mill.target.Device
+  val deviceStagePrepare = TaskKey[Unit]("device-install-prepare", "Prepare for installation debug package on device.")
+  val deviceStageCore = TaskKey[Unit]("device-install-core", "Core task for installation debug package on device.")
+  val deviceStageFinalizer = TaskKey[Unit]("device-install", "Install debug package on device.")
+  val deviceStageUninstall = TaskKey[Unit]("device-uninstall", "Uninstall package on device.")
+  val deviceStageUninstallSoft = TaskKey[Unit]("device-uninstall-soft", "Uninstall package on device, keep the data and cache directories.")
+  val deviceTest = TaskKey[Unit]("device-test", "Runs tests on device.")
+  val deviceTestOnly = InputKey[Unit]("device-test-only", "Run a single test on device")
+  // sbt.android.mill.target.Emulator
+  val emulatorStagePrepare = TaskKey[Unit]("emulator-install-prepare", "Prepare for installation debug package on emulator.")
+  val emulatorStageCore = TaskKey[Unit]("emulator-install-core", "Core task for installation debug package on emulator.")
+  val emulatorStageFinalizer = TaskKey[Unit]("emulator-install", "Install debug package on emulator.")
+  val emulatorStageUninstall = TaskKey[Unit]("emulator-uninstall", "Uninstall package on emulator.")
+  val emulatorStageUninstallSoft = TaskKey[Unit]("emulator-uninstall-soft", "Uninstall package on emulator, keep the data and cache directories.")
+  val emulatorTest = TaskKey[Unit]("emulator-test", "Runs tests in emulator.")
+  val emulatorTestOnly = InputKey[Unit]("emulator-test-only", "Run a single test on emulator")
   // sbt.android.mill.ndk
   val ndkBasePath = SettingKey[File]("ndk-output-path", "Base path for build process where 'jni' folder exists and optionaly 'obj', 'libs'")
   val ndkBuildName = SettingKey[String]("ndk-build-name", "Name for the 'ndk-build' tool")
@@ -112,7 +121,6 @@ object MillKeys {
   val ndkStageFinalizer = TaskKey[Unit]("ndk-build", "Compile native C/C++ sources.")
 
   /** Names */
-  val adbName = SettingKey[String]("adb-name")
   val assetsDirectoryName = SettingKey[String]("assets-dir-name")
   val jarNameSDK = SettingKey[String]("sdk-jar-name", "Name of SDK library")
   val manifestName = SettingKey[String]("manifest-name", "The manifest presents essential information about the application to the Android system")
@@ -122,7 +130,6 @@ object MillKeys {
   val resDirectoryName = SettingKey[String]("res-dir-name")
 
   /** Path Settings */
-  val adbPath = SettingKey[File]("adb-path")
   val jarPathSDK = SettingKey[File]("sdk-jar-path", "Path to SDK library")
   val mainAssetsPath = SettingKey[File]("main-asset-path")
   val mainResPath = TaskKey[File]("main-res-path")

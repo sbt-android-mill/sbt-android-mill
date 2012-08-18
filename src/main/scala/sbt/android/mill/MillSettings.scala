@@ -27,7 +27,6 @@ import sbt.Keys._
 
 object MillSettings {
   val defaultSettings = Seq[Setting[_]](
-    adbName := MillDefaults.ADBName,
     assetsDirectoryName := MillDefaults.assetsDirectoryName,
     envs := MillDefaults.envs,
     jarNameSDK := MillDefaults.jarNameSDK,
@@ -68,7 +67,6 @@ object MillSettings {
     managedClasspath <<= (managedClasspath in Runtime),
     fullClasspath <<= (fullClasspath in Runtime))
   val derivativeSettings = Seq[Setting[_]](
-    adbPath <<= (platformToolsPath, adbName)(_ / _),
     jarPathSDK <<= (platformPath, jarNameSDK)(_ / _),
     mainAssetsPath <<= (sourceDirectory, assetsDirectoryName)(_ / _),
     mainResPath <<= (sourceDirectory, resDirectoryName)(_ / _) map (x => x),
@@ -77,7 +75,7 @@ object MillSettings {
     managedNativePath <<= (sourceManaged in Compile)(_ / "native_libs"),
     manifestPath <<= (sourceDirectory, manifestName) map ((s, m) => Seq(s / m)),
     nativeLibrariesPath <<= (sourceDirectory)(_ / "libs"),
-    packageApkPath <<= (target, packageApkName) map (_ / _),
+    packageApkPath <<= (Keys.target, packageApkName) map (_ / _),
     platformToolsPath <<= (sdkPath)(_ / "platform-tools"),
     platformPath <<= (sdkPath, platformName)(_ / "platforms" / _),
     toolsPath <<= (sdkPath)(_ / "tools"))

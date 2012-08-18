@@ -22,7 +22,7 @@ import sbt.Logger
 import sbt.ProcessLogger
 import sbt.Level
 
-class ReduceLogLevelWrapper(log: Logger, newLevel: Level.Value, prefix: () => String = () => "") extends ProcessLogger {
+class ReduceLogLevelWrapper(log: Logger, maxLevel: Level.Value, prefix: () => String = () => "") extends ProcessLogger {
   import scala.collection.mutable.ListBuffer
   import Level.{ Info, Warn, Error, Value => LogLevel }
   private val msgs: ListBuffer[(LogLevel, String)] = new ListBuffer()
@@ -31,17 +31,17 @@ class ReduceLogLevelWrapper(log: Logger, newLevel: Level.Value, prefix: () => St
   def info(s: => String): Unit = synchronized { msgs += ((Info, s)) }
   def error(s: => String): Unit = synchronized { msgs += ((Error, s)) }
   def buffer[T](f: => T): T = f
-  private def print(desiredLevel: LogLevel)(t: (LogLevel, String)): String = t match {
-    case (Info, msg) =>
-      log.info(prefix() + msg)
+  private def print(desiredMaxLevel: LogLevel)(t: (LogLevel, String)): String = t match {
+    case (level, msg) if (level.id > desiredMaxLevel.id) =>
+      log.log(desiredMaxLevel, prefix() + msg)
       msg
-    case (Error, msg) =>
-      log.log(desiredLevel, prefix() + msg)
+    case (level, msg) =>
+      log.log(level, prefix() + msg)
       msg
   }
   def flush(exitCode: Int): Seq[String] = {
-    val level = if (exitCode == 0) newLevel else Error // reduce log level Error -> newLevel if exitCode is zero
-    var result = msgs map print(level)
+    val desiredMaxLevel = if (exitCode == 0) maxLevel else Error // reduce log level -> maxLevel if exitCode is zero
+    var result = msgs map print(desiredMaxLevel)
     msgs.clear()
     result
   }

@@ -21,7 +21,6 @@ package sbt.android.mill
 import sbt._
 
 object MillDefaults {
-  val ADBName = "adb"
   val assetsDirectoryName = "assets"
   val envs = List("ANDROID_SDK_HOME", "ANDROID_SDK_ROOT", "ANDROID_HOME")
   val jarNameSDK = "android.jar"

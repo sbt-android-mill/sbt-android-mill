@@ -27,7 +27,7 @@ object Compile extends MillStage {
   lazy val stagePrepareKey = compileStagePrepare
   lazy val stageCoreKey = compileStageCore
   lazy val stageFinalizerKey = compileStageFinalizer
-  lazy val settings: Seq[Project.Setting[_]] = Seq(
+  val settings: Seq[Project.Setting[_]] = Seq(
     compileStagePrepare <<= stagePrepareTask,
     compileStagePrepare <<= compileStagePrepare dependsOn (preStagePrepare),
     compileStageCorePre <<= compileStageCorePreTask,

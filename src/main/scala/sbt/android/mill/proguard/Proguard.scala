@@ -1,4 +1,6 @@
 /**
+ * sbt-android-mill - simple-build-tool multi-thread plugin with profiling
+ *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +35,7 @@ object Proguard extends MillStage {
   lazy val stageFinalizerKey = proguardStageFinalizer
   val DefaultProjectJarName = "classes.min.jar"
 
-  lazy val settings: Seq[Project.Setting[_]] = Seq(
+  val settings: Seq[Project.Setting[_]] = Seq(
     proguardEnabled := true,
     proguardProjectJarName := DefaultProjectJarName,
     proguardProjectJarPath <<= (target, proguardProjectJarName)(_ / _),

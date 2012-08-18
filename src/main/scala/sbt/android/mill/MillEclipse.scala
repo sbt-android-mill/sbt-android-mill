@@ -21,15 +21,5 @@ package sbt.android.mill
 import sbt._
 
 object MillEclipse extends Mill {
-  override def projectSettings = inConfig(MillKeys.millConf)(compositeSettings ++
-    pre.Pre.settings ++
-    aidl.AIDL.settings ++
-    aapt.AAPT.settings ++
-    compile.Compile.settings ++
-    proguard.Proguard.settings ++
-    dx.DX.settings ++
-    device.Device.settings ++
-    device.Emulator.settings ++
-    ndk.NDK.settings ++
-    Mill.tasksSequence) // always last!!!, at least after all tasks
+  override def projectSettings = MillClassic.projectSettings
 }

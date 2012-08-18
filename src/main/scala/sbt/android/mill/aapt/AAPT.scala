@@ -1,4 +1,6 @@
 /**
+ * sbt-android-mill - simple-build-tool multi-thread plugin with profiling
+ *
  * Copyright (c) 2012 Alexey Aksenov ezh@ezh.msk.ru
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +30,7 @@ object AAPT extends MillStage {
   val DefaultAAPTName = "aapt"
   val DefaultAAPTResourcesApkName = "resources.apk"
 
-  lazy val settings: Seq[Project.Setting[_]] = Seq(
+  val settings: Seq[Project.Setting[_]] = Seq(
     aaptAPKName := DefaultAAPTResourcesApkName,
     aaptAPKPath <<= (target, aaptAPKName)(_ / _),
     aaptName := DefaultAAPTName,

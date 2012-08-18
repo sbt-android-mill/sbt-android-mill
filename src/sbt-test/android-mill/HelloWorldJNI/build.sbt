@@ -1,6 +1,6 @@
 import sbt.android.mill.MillKeys._
 
-sbt.android.mill.MillEclipse.projectSettings
+sbt.android.mill.MillClassic.projectSettings
 
 name := "Simple"
 
