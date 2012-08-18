@@ -30,7 +30,7 @@ object MillKeys {
   // stage1 sbt.android.mill.pre
   val preStagePrepare = TaskKey[Unit]("pre-prepare", "First task in sequence before build project.")
   val preStageCore = TaskKey[Unit]("pre-core", "Core task for preparing environment before build project.")
-  val preStageFinalizer = TaskKey[Unit]("pre", "Prepage environment before build project.")
+  val preStageFinalizer = TaskKey[Unit]("pre", "Prepare environment before build project.")
   // stage2 sbt.android.mill.aidl
   val aidlName = SettingKey[String]("aidl-name")
   val aidlPath = SettingKey[File]("aidl-path")
@@ -38,8 +38,8 @@ object MillKeys {
   val aidlStageCore = TaskKey[Seq[File]]("aidl-core", "Core task for generation Java classes from .aidl files.")
   val aidlStageFinalizer = TaskKey[Unit]("aidl-generate", "Generate Java classes from .aidl files.")
   // stage3 sbt.android.mill.aapt
-  val aaptAPKName = SettingKey[String]("aapt-apk-name", "AAPT output file name")
-  val aaptAPKPath = SettingKey[File]("aapt-apk-path", "AAPT output file path")
+  val aaptApkName = SettingKey[String]("aapt-apk-name", "aapt output file name")
+  val aaptApkPath = SettingKey[File]("aapt-apk-path", "aapt output file path")
   val aaptName = SettingKey[String]("aapt-name")
   val aaptPackage = TaskKey[File]("aapt-package", "Package resources and assets.")
   val aaptPath = SettingKey[File]("aapt-path")
@@ -152,15 +152,17 @@ object MillKeys {
   val manifestSchema = SettingKey[String]("manifest-schema")
   val makeAssetPath = TaskKey[Unit]("make-assest-path")
   val makeManagedJavaPath = TaskKey[Unit]("make-managed-java-path")
-  val packageConfig = TaskKey[ApkConfig]("package-config", "Generates a Apk Config")
+  val packageConfig = TaskKey[ApkConfig]("package-config", "Generates an apk config")
   val preinstalledModules = SettingKey[Seq[ModuleID]]("preinstalled-modules", "A list of modules which are already included in Android")
   val versionName = TaskKey[String]("version-name")
 
   /** Base Tasks */
   val cleanApk = TaskKey[Unit]("clean-apk", "Remove apk package.")
   val copyNativeLibraries = TaskKey[Unit]("copy-native-libraries", "Copy native libraries added to libraries.")
-  val packageDebug = TaskKey[File]("package-debug", "Package and sign with a debug key.")
-  val packageRelease = TaskKey[File]("package-release", "Package without signing.")
+  val packageDebugCore = TaskKey[File]("package-debug-core", "Core task for oackage and sign with a debug key.")
+  val packageDebug = TaskKey[Unit]("package-debug", "Package and sign with a debug key.")
+  val packageReleaseCore = TaskKey[File]("package-release-core", "Core task for oackage without signing.")
+  val packageRelease = TaskKey[Unit]("package-release", "Package without signing.")
 
   // Replaces the Installable argument
   case class ApkConfig(

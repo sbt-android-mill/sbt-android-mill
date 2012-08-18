@@ -60,8 +60,10 @@ object Mill {
     def notify(pub: MillStage.type#Pub, event: MillEvent) = event match {
       case MillStage.Event.MillStart(state) =>
         val extracted = Project extract state
-        if (extracted.get(statisticsReset in millConf))
+        if (extracted.get(statisticsReset in millConf)) {
           profilingGroups = Seq()
+          stopwatch.Stopwatch.disposeAll
+        }
         totalStopwatch = Some(stopwatchGroup.start("TOTAL"))
         buildStartTime = System.currentTimeMillis()
       case MillStage.Event.MillStop(state) =>
@@ -85,10 +87,11 @@ object Mill {
     // package stage
     aaptPackage <<= aaptPackage dependsOn (makeAssetPath, dxStageCore),
     packageConfig <<= packageConfig dependsOn (aaptPackage),
-    packageDebug <<= packageDebug dependsOn (packageConfig),
+    packageDebugCore <<= packageDebugCore dependsOn (packageConfig),
+    packageReleaseCore <<= packageReleaseCore dependsOn (packageConfig),
     // install stage
-    deviceStageCore <<= deviceStageCore dependsOn packageDebug,
-    emulatorStageCore <<= emulatorStageCore dependsOn packageDebug)
+    deviceStageCore <<= deviceStageCore dependsOn packageDebugCore,
+    emulatorStageCore <<= emulatorStageCore dependsOn packageDebugCore)
 
   def projectSettings = Seq(
     statisticsReset := true,
@@ -99,10 +102,14 @@ object Mill {
     makeAssetPath <<= directory(mainAssetsPath),
     makeManagedJavaPath <<= directory(managedJavaPath),
     packageConfig <<= packageConfigTask,
-    packageDebug <<= packageTask(true),
-    packageDebug <<= packageDebug dependsOn (cleanApk, copyNativeLibraries),
-    packageRelease <<= packageTask(false),
-    packageRelease <<= packageRelease dependsOn (cleanApk, copyNativeLibraries),
+    packageDebugCore <<= packageTask(true),
+    packageDebugCore <<= packageDebugCore dependsOn (cleanApk, copyNativeLibraries),
+    packageDebug <<= (state, streams) map ((state, streams) => MillStage.stageFinalizer(packageDebug, state, streams.log)),
+    packageDebug <<= packageDebug dependsOn (packageDebugCore),
+    packageReleaseCore <<= packageTask(false),
+    packageReleaseCore <<= packageReleaseCore dependsOn (cleanApk, copyNativeLibraries),
+    packageRelease <<= (state, streams) map ((state, streams) => MillStage.stageFinalizer(packageRelease, state, streams.log)),
+    packageRelease <<= packageRelease dependsOn (packageReleaseCore),
     sourceGenerators in Compile <+= librariesSources,
     statistics <<= statisticsTask)
 
@@ -180,7 +187,7 @@ object Mill {
         }
     }
   def packageConfigTask =
-    (toolsPath, packageApkPath, aaptAPKPath, dxProjectDexPath,
+    (toolsPath, packageApkPath, aaptApkPath, dxProjectDexPath,
       nativeLibrariesPath, managedNativePath, dxInputs, resourceDirectory) map
       (ApkConfig(_, _, _, _, _, _, _, _))
   def packageTask(debug: Boolean): Project.Initialize[Task[File]] = (packageConfig, streams) map { (c, s) =>

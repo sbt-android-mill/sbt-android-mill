@@ -8,7 +8,6 @@ version := "0.1-SNAPSHOT"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit", "-Xfatal-warnings")
 
-
 libraryDependencies ++= Seq(
     "org.digimead" %% "stopwatch-core" % "1.0-SNAPSHOT",
     "com.google.android.tools" % "ddmlib" % "r10",

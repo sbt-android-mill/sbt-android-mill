@@ -1,0 +1,3 @@
+# view AndroidManifest.xml #generated:7
+-keep class sbt.android.mill.androidlib.ACTIVITY_ENTRY_NAME { <init>(...); }
+

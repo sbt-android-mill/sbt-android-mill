@@ -37,7 +37,5 @@ object Pre extends MillStage {
 
   def preStagePrepareTask = (state, streams) map ((state, streams) =>
     stagePrepare(state, streams.log, true))
-  def preStageCoreTask = (streams) map ((s) => task(s.log) {
-    stopwatch.Stopwatch.disposeAll
-  })
+  def preStageCoreTask = (streams) map ((s) => task(s.log) {})
 }

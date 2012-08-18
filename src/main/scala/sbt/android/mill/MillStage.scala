@@ -49,11 +49,12 @@ trait MillStage {
   /** tag for logger */
   val tag = stageFinalizerKey.key.label
 
+  def header(tag: String = tag) = MillStage.header(tag)
   def stagePrepareTask = (state, streams) map ((state, streams) => stagePrepare(state, streams.log))
-  def stagePrepare(state: State, log: sbt.Logger, firstPrepareInSequence: Boolean = false) {
-    Mill.synchronized { if (firstPrepareInSequence) MillStage.publish(MillStage.Event.MillStart(state)) }
-    log.debug(header() + "preparing")
-  }
+  def stagePrepare(state: State, log: sbt.Logger, firstPrepareInSequence: Boolean = false) = MillStage.stagePrepare(tag, state, log, firstPrepareInSequence)
+  def stageFinalizerTask = (state, streams) map ((state, streams) => stageFinalizer(state, streams.log))
+  def stageFinalizer(state: State, log: sbt.Logger) = MillStage.stageFinalizer(tag, state, log)
+  def stopwatchGroup = Mill.getStopwatchGroup(tag)
   def taskPre(log: sbt.Logger, tag: String = tag) {
     profiling(tag) = stopwatchGroup.start(tag)
     log.info(header(tag) + "start task")
@@ -67,13 +68,23 @@ trait MillStage {
     taskPost(tag)
     result
   }
-  def stageFinalizerTask = (state, streams) map ((state, streams) => stageFinalizer(state, streams.log))
-  def stageFinalizer(state: State, log: sbt.Logger) {
-    log.debug(header() + "finalizing sequence")
+}
+
+sealed trait MillEvent
+
+object MillStage extends Publisher[MillEvent] {
+  def stagePrepare(tag: Scoped, state: State, log: sbt.Logger, firstPrepareInSequence: Boolean): Unit =
+    stagePrepare(tag.key.label, state, log, firstPrepareInSequence)
+  def stagePrepare(tag: String, state: State, log: sbt.Logger, firstPrepareInSequence: Boolean) {
+    Mill.synchronized { if (firstPrepareInSequence) MillStage.publish(MillStage.Event.MillStart(state)) }
+    log.debug(header(tag) + "preparing")
+  }
+  def stageFinalizer(tag: Scoped, state: State, log: sbt.Logger): Unit = stageFinalizer(tag.key.label, state, log)
+  def stageFinalizer(tag: String, state: State, log: sbt.Logger) {
+    log.debug(header(tag) + "finalizing sequence")
     Mill.synchronized { MillStage.publish(MillStage.Event.MillStop(state)) }
   }
-  def stopwatchGroup = Mill.getStopwatchGroup(tag)
-  protected def header(tag: String = tag) = {
+  protected def header(tag: String) = {
     val (minutes, seconds) = getRunTime
     "%dm%ds >>> [%s:%d] ".format(minutes, seconds, tag, Thread.currentThread.getId())
   }
@@ -82,11 +93,6 @@ trait MillStage {
     (TimeUnit.MILLISECONDS.toMinutes(millis), TimeUnit.MILLISECONDS.toSeconds(millis) -
       TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)))
   }
-}
-
-sealed trait MillEvent
-
-object MillStage extends Publisher[MillEvent] {
   override protected def publish(event: MillEvent) =
     super.publish(event)
   object Event {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ACTIVITY_ENTRY_NAME</string>
+    <string name="hello">\@string/hello - Hello from library xml resource</string>
+    <string name="hello_from_xml">\@string/hello_from_xml - Hello from library resource that loaded directly into a xml layout</string>
+</resources>
