@@ -19,7 +19,23 @@
 package sbt.android.mill
 
 import sbt._
+import sbt.Keys._
+import sbt.android.mill.MillKeys._
 
 object MillEclipse extends Mill {
-  override def projectSettings = MillClassic.projectSettings
+  override def projectSettings = MillClassic.projectSettings ++ inConfig(MillKeys.millConf)(Seq(
+    manifestPath <<= (baseDirectory, manifestName) map ((base, name) => Seq(base / name)),
+    mainAssetsPath <<= (baseDirectory, assetsDirectoryName)(_ / _),
+    mainResPath <<= (baseDirectory, resDirectoryName) map (_ / _),
+    managedJavaPath <<= (baseDirectory)(_ / "gen"),
+    nativeLibrariesPath <<= (sourceDirectory)(_ / "libs"),
+    aaptApkName := "resources.ap_",
+    aaptApkPath <<= (crossTarget, aaptApkName)(_ / _),
+    dxProjectDexPath <<= (crossTarget, dxProjectDexName)(_ / _),
+    packageApkName <<= (name) map ((a) => String.format("%s.apk", a)),
+    packageApkPath <<= (crossTarget, packageApkName) map (_ / _),
+    crossTarget <<= (baseDirectory)(_ / "bin"),
+    Keys.target <<= (baseDirectory)(_ / "bin"))) ++
+    Seq(crossTarget <<= (baseDirectory)(_ / "bin"),
+      Keys.target <<= (baseDirectory)(_ / "bin"))
 }

@@ -63,14 +63,15 @@ object AAPT extends MillStage {
           ) yield arg
 
           def runAapt(`package`: String, args: String*) {
-            val aapt = Seq(aPath.absolutePath, "package", "-m", "--auto-add-overlay", "--non-constant-id",
-              "--extra-packages", libraries.map(_.pkgName).mkString(":"),
-              "-M", mPath.head.absolutePath,
-              "-S", resPath.absolutePath) ++
-              libraryResPathArgs ++
-              Seq("-I", jPath.absolutePath,
-                "-J", javaPath.absolutePath) ++
-                args ++ libraryAssetPathArgs
+            val extraPackages = if (libraries.nonEmpty) Seq("--extra-packages", libraries.map(_.pkgName).mkString(":")) else Seq()
+            val aapt = Seq(aPath.absolutePath, "package", "-m", "--auto-add-overlay", "--non-constant-id") ++
+              extraPackages ++
+              Seq("-M", mPath.head.absolutePath,
+                "-S", resPath.absolutePath) ++
+                libraryResPathArgs ++
+                Seq("-I", jPath.absolutePath,
+                  "-J", javaPath.absolutePath) ++
+                  args ++ libraryAssetPathArgs
             streams.log.debug(header() + aapt.mkString(" "))
             if (aapt.run(false).exitValue != 0)
               sys.error(header() + "error generating resources")
