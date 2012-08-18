@@ -18,9 +18,11 @@
 
 package sbt.android.mill.util
 
+import scala.collection.mutable.ListBuffer
+
+import sbt.Level
 import sbt.Logger
 import sbt.ProcessLogger
-import sbt.Level
 
 class ReduceLogLevelWrapper(log: Logger, maxLevel: Level.Value, prefix: () => String = () => "") extends ProcessLogger {
   import scala.collection.mutable.ListBuffer
