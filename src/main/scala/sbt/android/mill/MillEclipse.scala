@@ -38,7 +38,7 @@ object MillEclipse extends Mill {
   def eclipseSyncTask =
     (compileStageCore in millConf, classDirectory in Compile, baseDirectory, streams) map {
       (compileStageCore, originalClassDirectory, baseDirectory, streams) =>
-        MillStage.task(streams.log, eclipseSync.key.label) {
+        MillStage.task(streams.log, "eclipse-sync") {
           val eclipseClassDirectory = baseDirectory / "bin" / "classes"
           streams.log.debug("update " + originalClassDirectory + " -> " + eclipseClassDirectory)
           sbt.IO.copyDirectory(originalClassDirectory, eclipseClassDirectory, true)
