@@ -88,6 +88,7 @@ object MillKeys {
   val deviceStageFinalizer = TaskKey[Unit]("device-install", "Install debug package on device.")
   val deviceStageUninstall = TaskKey[Unit]("device-uninstall", "Uninstall package on device.")
   val deviceStageUninstallSoft = TaskKey[Unit]("device-uninstall-soft", "Uninstall package on device, keep the data and cache directories.")
+  val deviceStageReinstall = TaskKey[Unit]("device-reinstall", "Uninstall package on device before installation process.")  
   val deviceTest = TaskKey[Unit]("device-test", "Runs tests on device.")
   val deviceTestOnly = InputKey[Unit]("device-test-only", "Run a single test on device")
   // sbt.android.mill.target.Emulator
@@ -96,6 +97,7 @@ object MillKeys {
   val emulatorStageFinalizer = TaskKey[Unit]("emulator-install", "Install debug package on emulator.")
   val emulatorStageUninstall = TaskKey[Unit]("emulator-uninstall", "Uninstall package on emulator.")
   val emulatorStageUninstallSoft = TaskKey[Unit]("emulator-uninstall-soft", "Uninstall package on emulator, keep the data and cache directories.")
+  val emulatorStageReinstall = TaskKey[Unit]("emulator-reinstall", "Uninstall package on emulator before installation process.")  
   val emulatorTest = TaskKey[Unit]("emulator-test", "Runs tests in emulator.")
   val emulatorTestOnly = InputKey[Unit]("emulator-test-only", "Run a single test on emulator")
   // sbt.android.mill.ndk

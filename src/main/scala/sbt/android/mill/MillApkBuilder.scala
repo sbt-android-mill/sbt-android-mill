@@ -18,7 +18,7 @@
 
 package sbt.android.mill
 
-import java.io.{ByteArrayOutputStream, File, PrintStream}
+import java.io.{ ByteArrayOutputStream, File, PrintStream }
 
 import sbt._
 import sbt.classpath._
@@ -40,19 +40,18 @@ class MillApkBuilder(project: ApkConfig, debug: Boolean) {
   type JApkBuilder = Object
   // sdklib has not been packaged yet, need to load dynamically
   val klass = ClasspathUtilities.toLoader(project.androidToolsPath / "lib" / "sdklib.jar")
-                                .loadClass("com.android.sdklib.build.ApkBuilder")
+    .loadClass("com.android.sdklib.build.ApkBuilder")
   val outputStream = new ByteArrayOutputStream
 
-  def build():Either[String, String] = try {
+  def build(): Either[String, String] = try {
     val constructor = klass.getConstructor(
       classOf[File], classOf[File], classOf[File], classOf[String], classOf[PrintStream])
-    val builder:JApkBuilder = constructor.newInstance(
-        project.packageApkPath,
-        project.resourcesApkPath,
-        project.classesDexPath,
-        if (debug) getDebugKeystore else null,
-        new PrintStream(outputStream)
-    ).asInstanceOf[JApkBuilder]
+    val builder: JApkBuilder = constructor.newInstance(
+      project.packageApkPath,
+      project.resourcesApkPath,
+      project.classesDexPath,
+      if (debug) getDebugKeystore else null,
+      new PrintStream(outputStream)).asInstanceOf[JApkBuilder]
 
     setDebugMode(builder, debug)
     addNativeLibraries(builder, project.nativeLibrariesPath, null)
@@ -62,31 +61,31 @@ class MillApkBuilder(project: ApkConfig, debug: Boolean) {
     addSourceFolder(builder, project.resourceDirectory)
     sealApk(builder)
 
-    Right("Packaging "+project.packageApkPath)
+    Right("Packaging " + project.packageApkPath)
   } catch {
     case e: Throwable => Left(
-        String.format("\n%s\nError packaging %s: %s",
-          outputStream.toString,
-          project.packageApkPath,
-          if (e.getCause != null) e.getCause.getMessage else e.getMessage))
+      String.format("\n%s\nError packaging %s: %s",
+        outputStream.toString,
+        project.packageApkPath,
+        if (e.getCause != null) e.getCause.getMessage else e.getMessage))
   }
 
   def getDebugKeystore = klass.getMethod("getDebugKeystore").invoke(null).asInstanceOf[String]
 
   def setDebugMode(builder: JApkBuilder, debug: Boolean) {
     klass.getMethod("setDebugMode", classOf[Boolean])
-         .invoke(builder, debug.asInstanceOf[Object])
+      .invoke(builder, debug.asInstanceOf[Object])
   }
 
   def addNativeLibraries(builder: JApkBuilder, nativeFolder: File, abiFilter: String) {
     if (nativeFolder.exists && nativeFolder.isDirectory) {
       try {
         klass.getMethod("addNativeLibraries", classOf[File], classOf[String])
-             .invoke(builder, nativeFolder, abiFilter)
+          .invoke(builder, nativeFolder, abiFilter)
       } catch {
         case e: java.lang.NoSuchMethodException => {
           klass.getMethod("addNativeLibraries", classOf[File])
-               .invoke(builder, nativeFolder)
+            .invoke(builder, nativeFolder)
         }
       }
     }
@@ -106,7 +105,7 @@ class MillApkBuilder(project: ApkConfig, debug: Boolean) {
   def addSourceFolder(builder: JApkBuilder, folder: File) {
     if (folder.exists) {
       klass.getMethod("addSourceFolder", classOf[File])
-           .invoke(builder, folder)
+        .invoke(builder, folder)
     }
   }
 

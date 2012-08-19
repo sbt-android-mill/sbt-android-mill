@@ -24,6 +24,7 @@ import sbt.android.mill.MillKeys._
 import sbt.android.mill.Mill
 import java.io.File
 import sbt.android.mill.MillStage
+import sbt.android.mill.util.ReduceLogLevelWrapper
 
 /**
  * Support for the Android NDK.
@@ -103,12 +104,14 @@ object NDK extends MillStage {
         }
         if (jniPath.exists)
           task(streams.log, tag) {
+            val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header() + "ndk output: ")
             val ndkBuild = ndkBuildPath.absolutePath :: "-C" :: basePath.absolutePath ::
               (javahOutputEnv + "=" + javahOutputDirectory.absolutePath) :: targets.toList
-            streams.log.debug(header(tag) + "Running ndk-build: " + ndkBuild.mkString(" "))
-            val exitValue = ndkBuild.run(false).exitValue
-            if (exitValue != 0)
-              streams.log.error(header(tag) + "ndk-build failed with nonzero exit code (" + exitValue + ")")
+            streams.log.debug(header(tag) + "running ndk-build: " + ndkBuild.mkString(" "))
+            val code = Process(ndkBuild) ! logger
+            logger.flush(code)
+            if (code != 0)
+              streams.log.error(header(tag) + "ndk-build failed with nonzero exit code (" + code + ")")
           }
         else
           streams.log.info(header(tag) + "ndk-jni-directory-path not exists, skip")

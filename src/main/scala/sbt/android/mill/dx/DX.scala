@@ -19,12 +19,12 @@
 package sbt.android.mill.dx
 
 import java.io.{ File => JFile }
-
 import sbt._
 import sbt.Keys._
 import sbt.android.mill.MillStage
 import sbt.android.mill.MillKeys._
 import sbt.android.mill.Mill
+import sbt.android.mill.util.ReduceLogLevelWrapper
 
 object DX extends MillStage {
   lazy val stagePrepareKey = dxStagePrepare
@@ -52,6 +52,7 @@ object DX extends MillStage {
     (dxPath, dxInputs, dxOpts, proguardOptimizations, classDirectory, dxProjectDexPath, scalaInstance, streams) map {
       (dxPath, dxInputs, dxOpts, proguardOptimizations, classDirectory, classesDexPath, scalaInstance, streams) =>
         task(streams.log) {
+          val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header() + "dx output: ")
           def dexing(inputs: Seq[JFile], output: JFile) {
             val uptodate = output.exists && inputs.forall(input =>
               input.isDirectory match {
@@ -69,10 +70,13 @@ object DX extends MillStage {
                 "--num-threads=" + java.lang.Runtime.getRuntime.availableProcessors,
                 "--output=" + output.getAbsolutePath) ++
                 inputs.map(_.absolutePath)).filter(_.length > 0)
-              streams.log.debug(dxCmd.mkString(" "))
-              streams.log.info("Dexing " + output.getAbsolutePath)
-              streams.log.debug(dxCmd !!)
-            } else streams.log.debug("dex file " + output.getAbsolutePath + " uptodate, skipping")
+              streams.log.debug(header() + dxCmd.mkString(" "))
+              streams.log.info(header() + "Dexing " + output.getAbsolutePath)
+              val code = Process(dxCmd) ! logger
+              logger.flush(code)
+              if (code != 0)
+                sys.error(header() + "error dexing project jar")
+            } else streams.log.debug(header() + "dex file " + output.getAbsolutePath + " uptodate, skipping")
           }
 
           // Option[Seq[String]]
@@ -86,7 +90,7 @@ object DX extends MillStage {
                 case exceptSeq: Seq[_] if exceptSeq.nonEmpty =>
                   val (filtered, orig) = dxInputs.get.partition(file =>
                     exceptSeq.exists(filter => {
-                      streams.log.debug("apply filter \"" + filter + "\" to \"" + file.getAbsolutePath + "\"")
+                      streams.log.debug(header() + "apply filter \"" + filter + "\" to \"" + file.getAbsolutePath + "\"")
                       file.getAbsolutePath.matches(filter)
                     }))
                   // dex only classes directory ++ filtered, predex all other
@@ -95,8 +99,8 @@ object DX extends MillStage {
                   // dex only classes directory, predex all other
                   ((classDirectory --- scalaInstance.libraryJar).get, (dxInputs --- classDirectory).get)
               }
-              dexFiles.foreach(s => streams.log.debug("pack in dex \"" + s.getName + "\""))
-              predexFiles.foreach(s => streams.log.debug("pack in predex \"" + s.getName + "\""))
+              dexFiles.foreach(s => streams.log.debug(header() + "pack in dex \"" + s.getName + "\""))
+              predexFiles.foreach(s => streams.log.debug(header() + "pack in predex \"" + s.getName + "\""))
               // dex
               dexing(dexFiles, classesDexPath)
               // predex

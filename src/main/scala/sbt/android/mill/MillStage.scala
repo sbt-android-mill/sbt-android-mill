@@ -68,11 +68,11 @@ object MillStage extends Publisher[MillEvent] {
     stagePrepare(tag.key.label, state, log, firstPrepareInSequence)
   def stagePrepare(tag: String, state: State, log: sbt.Logger, firstPrepareInSequence: Boolean) {
     Mill.synchronized { if (firstPrepareInSequence) MillStage.publish(MillStage.Event.MillStart(state)) }
-    log.debug(header(tag) + "preparing")
+    log.info(header(tag) + "preparing")
   }
   def stageFinalizer(tag: Scoped, state: State, log: sbt.Logger): Unit = stageFinalizer(tag.key.label, state, log)
   def stageFinalizer(tag: String, state: State, log: sbt.Logger) {
-    log.debug(header(tag) + "finalizing sequence")
+    log.info(header(tag) + "finalizing sequence")
     Mill.synchronized { MillStage.publish(MillStage.Event.MillStop(state)) }
   }
   def taskPre(log: sbt.Logger, tag: String, profiling: HashMap[String, Stopwatch]) {
@@ -88,7 +88,7 @@ object MillStage extends Publisher[MillEvent] {
     taskPost(tag, profiling)
     result
   }
-  protected def header(tag: String) = {
+  def header(tag: String) = {
     val (minutes, seconds) = getRunTime
     "%dm%ds >>> [%s:%d] ".format(minutes, seconds, tag, Thread.currentThread.getId())
   }
