@@ -43,8 +43,8 @@ object AIDL extends MillStage {
     sourceGenerators in Compile <+= aidlStageCore)
 
   def aidlStageCoreTask =
-    (sourceDirectories, aidlPath, platformPath, managedJavaPath, javaSource, streams) map {
-      (sDirs, aidlPath, platformPath, javaPath, jSource, s) =>
+    (sourceDirectories in Compile, aidlPath, platformPath, managedJavaPath, javaSource, scalaSource in Compile, streams) map {
+      (sDirs, aidlPath, platformPath, javaPath, jSource, sSource, s) =>
         task(s.log) {
           val aidlPaths = sDirs.map(_ ** "*.aidl").reduceLeft(_ +++ _).get
           if (aidlPaths.isEmpty) {
@@ -53,9 +53,10 @@ object AIDL extends MillStage {
           } else {
             val processor = aidlPaths.map { ap =>
               aidlPath.absolutePath ::
-                "-p" + (platformPath / "framework.aidl").absolutePath ::
                 "-o" + javaPath.absolutePath ::
                 "-I" + jSource.absolutePath ::
+                "-I" + sSource.absolutePath ::
+                "-p" + (platformPath / "framework.aidl").absolutePath ::
                 ap.absolutePath :: Nil
             }.foldLeft(None.asInstanceOf[Option[ProcessBuilder]]) { (f, s) =>
               f match {
