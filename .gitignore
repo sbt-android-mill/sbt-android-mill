@@ -20,3 +20,5 @@ project/plugins/project/
 .classpath
 
 armeabi/
+
+!src/main/scala/sbt/android/mill/target/
