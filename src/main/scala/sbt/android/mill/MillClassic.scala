@@ -28,8 +28,8 @@ object MillClassic extends Mill {
     compile.Compile.settings ++
     proguard.Proguard.settings ++
     dx.DX.settings ++
-    target.Device.settings ++
-    target.Emulator.settings ++
+    _root_.sbt.android.mill.target.Device.settings ++
+    _root_.sbt.android.mill.target.Emulator.settings ++
     ndk.NDK.settings ++
     Mill.tasksSequence) // always last!!!, at least after all tasks
 }
