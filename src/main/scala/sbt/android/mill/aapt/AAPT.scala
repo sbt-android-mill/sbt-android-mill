@@ -22,6 +22,7 @@ import sbt._
 import sbt.Keys._
 import sbt.android.mill.MillStage
 import sbt.android.mill.MillKeys._
+import sbt.android.mill.util.ReduceLogLevelWrapper
 
 object AAPT extends MillStage {
   lazy val stagePrepareKey = aaptStagePrepare
@@ -48,23 +49,14 @@ object AAPT extends MillStage {
     (manifestPackage, aaptPath, manifestPath, mainResPath, jarPathSDK, managedJavaPath, libraries, streams) map {
       (mPackage, aPath, mPath, resPath, jPath, javaPath, libraries, streams) =>
         task(streams.log) {
+          val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header() + "aapt output: ")
           if (libraries.nonEmpty)
             streams.log.debug(header() + "add libraries '" + libraries.map(_.pkgName).mkString("', '") + "'")
-          val libraryResPathArgs = for {
-            lib <- libraries
-            d <- lib.resources.toSeq
-            arg <- Seq("-S", d.absolutePath)
-          } yield arg
-
-          val libraryAssetPathArgs = for (
-            lib <- libraries;
-            d <- lib.assets.toSeq;
-            arg <- Seq("-A", d.absolutePath)
-          ) yield arg
-
+          val libraryResPathArgs = libraries.flatMap(_.resources.map(d => Seq("-S", d.absolutePath))).flatten
+          val libraryAssetPathArgs = libraries.flatMap(_.assets.map(d => Seq("-A", d.absolutePath))).flatten
           def runAapt(`package`: String, args: String*) {
             val extraPackages = if (libraries.nonEmpty) Seq("--extra-packages", libraries.map(_.pkgName).mkString(":")) else Seq()
-            val aapt = Seq(aPath.absolutePath, "package", "-m", "--auto-add-overlay", "--non-constant-id") ++
+            val aapt = Seq(aPath.absolutePath, "package", "--auto-add-overlay", "-v", "-m", "--non-constant-id", "--custom-package", mPackage) ++
               extraPackages ++ Seq(
                 "-M", mPath.head.absolutePath,
                 "-S", resPath.absolutePath) ++
@@ -73,7 +65,9 @@ object AAPT extends MillStage {
                   "-J", javaPath.absolutePath) ++
                   args ++ libraryAssetPathArgs
             streams.log.debug(header() + aapt.mkString(" "))
-            if (aapt.run(false).exitValue != 0)
+            val code = Process(aapt) ! logger
+            logger.flush(code)
+            if (code != 0)
               sys.error(header() + "error generating resources")
           }
           runAapt(mPackage)
@@ -85,14 +79,10 @@ object AAPT extends MillStage {
       (apPath, manPath, rPath, assetPath, jPath, resApkPath, libraries, streams) =>
         val taskKeyLabel = aaptPackage.key.label
         task(streams.log, taskKeyLabel) {
+          val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header(taskKeyLabel) + "aapt output: ")
           if (libraries.nonEmpty)
             streams.log.debug(header(taskKeyLabel) + "add libraries '" + libraries.map(_.pkgName).mkString("', '") + "'")
-          val libraryResPathArgs = for {
-            lib <- libraries
-            d <- lib.resources.toSeq
-            arg <- Seq("-S", d.absolutePath)
-          } yield arg
-
+          val libraryResPathArgs = libraries.flatMap(_.resources.map(d => Seq("-S", d.absolutePath))).flatten
           val aapt = Seq(apPath.absolutePath, "package", "--auto-add-overlay", "-f", "--generate-dependencies", "-v",
             "-M", manPath.head.absolutePath,
             "-S", rPath.absolutePath) ++
@@ -101,7 +91,9 @@ object AAPT extends MillStage {
               "-I", jPath.absolutePath,
               "-F", resApkPath.absolutePath)
           streams.log.debug(header(taskKeyLabel) + "packaging: " + aapt.mkString(" "))
-          if (aapt.run(false).exitValue != 0)
+          val code = Process(aapt) ! logger
+          logger.flush(code)
+          if (code != 0)
             sys.error(header(taskKeyLabel) + "error packaging resources")
           resApkPath
         }

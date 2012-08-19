@@ -3,7 +3,49 @@ sbt-android-mill
 
 sbt-android-mill - simple-build-tool multi-thread plugin with profiling
 
-If you want improve it, please send mail to sbt-android-mill at digimead.org. You will be added to the group and to authors.
+If you want improve it, please send mail to sbt-android-mill at digimead.org. You will be added to the group. Please, feel free to add yourself to authors.
+
+There are base HelloWorld projects:
+
+* [HelloWorld](https://github.com/sbt-android-mill/sbt-android-mill/tree/master/src/sbt-test/android-mill/HelloWorld)
+* [HelloWorldEclipse](https://github.com/sbt-android-mill/sbt-android-mill/tree/master/src/sbt-test/android-mill/HelloWorldEclipse)
+* [HelloWorldInstrumentation](https://github.com/sbt-android-mill/sbt-android-mill/tree/master/src/sbt-test/android-mill/HelloWorldInstrumentation)
+* [HelloWorldJavaLibrary](https://github.com/sbt-android-mill/sbt-android-mill/tree/master/src/sbt-test/android-mill/HelloWorldJavaLibrary)
+* [HelloWorldJNI](https://github.com/sbt-android-mill/sbt-android-mill/tree/master/src/sbt-test/android-mill/HelloWorldJNI)
+
+Please, read [sbt.android.mill.MillKeys](https://github.com/sbt-android-mill/sbt-android-mill/blob/master/src/main/scala/sbt/android/mill/MillKeys.scala). It is very very easy to read.
+
+## Adding to your project ##
+
+Create a
+
+ * _project/plugins/project/Build.scala_ - for older simple-build-tool
+ * _project/project/Build.scala_ - for newer simple-build-tool
+
+file that looks like the following:
+
+```scala
+    import sbt._
+    object PluginDef extends Build {
+      override def projects = Seq(root)
+      lazy val root = Project("plugins", file(".")) dependsOn(mill)
+      lazy val mill = uri("git://github.com/sbt-android-mill/sbt-android-mill.git#0.1")
+    }
+```
+
+You may find more information about Build.scala at [https://github.com/harrah/xsbt/wiki/Plugins](https://github.com/harrah/xsbt/wiki/Plugins)
+
+Then in your _build.sbt_ file, simply add:
+
+``` scala
+    sbt.android.mill.MillClassic.go
+```
+
+or
+
+``` scala
+    sbt.android.mill.MillEclipse.go
+```
 
 ## packages - build stages relation
 

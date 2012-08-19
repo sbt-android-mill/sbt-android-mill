@@ -102,11 +102,11 @@ object Mill {
     makeAssetPath <<= directory(mainAssetsPath),
     makeManagedJavaPath <<= directory(managedJavaPath),
     packageConfig <<= packageConfigTask,
-    packageDebugCore <<= packageTask(true),
+    packageDebugCore <<= packageTask(true, packageDebug),
     packageDebugCore <<= packageDebugCore dependsOn (cleanApk, copyNativeLibraries),
     packageDebug <<= (state, streams) map ((state, streams) => MillStage.stageFinalizer(packageDebug, state, streams.log)),
     packageDebug <<= packageDebug dependsOn (packageDebugCore),
-    packageReleaseCore <<= packageTask(false),
+    packageReleaseCore <<= packageTask(false, packageRelease),
     packageReleaseCore <<= packageReleaseCore dependsOn (cleanApk, copyNativeLibraries),
     packageRelease <<= (state, streams) map ((state, streams) => MillStage.stageFinalizer(packageRelease, state, streams.log)),
     packageRelease <<= packageRelease dependsOn (packageReleaseCore),
@@ -190,11 +190,15 @@ object Mill {
     (toolsPath, packageApkPath, aaptApkPath, dxProjectDexPath,
       nativeLibrariesPath, managedNativePath, dxInputs, resourceDirectory) map
       (ApkConfig(_, _, _, _, _, _, _, _))
-  def packageTask(debug: Boolean): Project.Initialize[Task[File]] = (packageConfig, streams) map { (c, s) =>
-    val builder = new MillApkBuilder(c, debug)
-    builder.build.fold(sys.error(_), s.log.info(_))
-    s.log.debug(builder.outputStream.toString)
-    c.packageApkPath
+  def packageTask(debug: Boolean, taskTag: Scoped): Project.Initialize[Task[File]] = (packageConfig, streams) map { (c, streams) =>
+    val taskKeyLabel = taskTag.key.label
+    MillStage.task(streams.log, taskKeyLabel) {
+      val builder = new MillApkBuilder(c, debug)
+      builder.build.fold(msg => sys.error(MillStage.header(taskKeyLabel) + msg),
+        msg => streams.log.info(MillStage.header(taskKeyLabel) + msg))
+      streams.log.debug(MillStage.header(taskKeyLabel) + builder.outputStream.toString)
+      c.packageApkPath
+    }
   }
   def statisticsTask = (streams) map (s => dumpStopWatchStatistics(s.log))
   /*

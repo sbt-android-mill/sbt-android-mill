@@ -24,14 +24,15 @@ import sbt.android.mill.MillKeys._
 
 object MillEclipse extends Mill {
   override def go = MillClassic.go ++ inConfig(millConf)(Seq(
-    manifestPath <<= (baseDirectory, manifestName) map ((base, name) => Seq(base / name)),
-    mainAssetsPath <<= (baseDirectory, assetsDirectoryName)(_ / _),
-    mainResPath <<= (baseDirectory, resDirectoryName) map (_ / _),
-    managedJavaPath <<= (baseDirectory)(_ / "gen"),
-    nativeLibrariesPath <<= (sourceDirectory)(_ / "libs"),
     aaptApkName := "resources.ap_",
     aaptApkPath <<= (baseDirectory, aaptApkName)(_ / "bin" / _),
     dxProjectDexPath <<= (baseDirectory, dxProjectDexName)(_ / "bin" / _),
+    mainAssetsPath <<= (baseDirectory, assetsDirectoryName)(_ / _),
+    mainResPath <<= (baseDirectory, resDirectoryName) map (_ / _),
+    managedJavaPath <<= (baseDirectory)(_ / "gen"),
+    manifestPath <<= (baseDirectory, manifestName) map ((base, name) => Seq(base / name)),
+    ndkJNIDirectoryPath <<= (baseDirectory, ndkJNIDirectoryName)(_ / "src" / _),
+    nativeLibrariesPath <<= (baseDirectory)(_ / "src" / "libs"),
     packageApkName <<= (name) map ((a) => String.format("%s.apk", a)),
     packageApkPath <<= (baseDirectory, packageApkName) map (_ / "bin" / _),
     compileStageCore <<= eclipseSyncTask))

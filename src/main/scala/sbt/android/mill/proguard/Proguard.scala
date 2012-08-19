@@ -20,14 +20,13 @@ package sbt.android.mill.proguard
 
 import java.io.{ File => JFile }
 import java.util.Properties
-
 import proguard.{ Configuration => ProGuardConfiguration, ProGuard, ConfigurationParser }
-
 import sbt._
 import sbt.Keys._
 import sbt.android.mill.MillStage
 import sbt.android.mill.MillKeys._
 import sbt.Project
+import sbt.android.mill.util.ReduceLogLevelWrapper
 
 object Proguard extends MillStage {
   lazy val stagePrepareKey = proguardStagePrepare
@@ -69,14 +68,14 @@ object Proguard extends MillStage {
                 "-outjars" :: "\"" + classesMinJarPath.absolutePath + "\"" ::
                 "-libraryjars" :: jarPathSDK.get.map("\"" + _ + "\"").mkString(sep) ::
                 Nil) ++ optimizationOptions ++ proguardOption
-              streams.log.debug("executing proguard: " + (for (i <- 0 until args.size) yield { "arg" + (i + 1) + ": " + args(i) }).mkString("\n"))
+              streams.log.debug(header() + "executing proguard: " + (for (i <- 0 until args.size) yield { "arg" + (i + 1) + ": " + args(i) }).mkString("\n"))
               val config = new ProGuardConfiguration
               new ConfigurationParser(args.toArray[String], new Properties).parse(config)
-              streams.log.debug("executing proguard: " + args.mkString("\n"))
+              streams.log.debug(header() + "executing proguard: " + args.mkString("\n"))
               new ProGuard(config).execute
               Some(classesMinJarPath)
             } else {
-              streams.log.info("Skipping Proguard")
+              streams.log.info(header() + "Skipping Proguard")
               None
             }
           }
