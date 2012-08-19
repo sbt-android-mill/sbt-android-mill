@@ -2,7 +2,7 @@ import sbt.android.mill.MillKeys._
 import Types._
 import Path._
 
-sbt.android.mill.MillClassic.projectSettings
+sbt.android.mill.MillClassic.go
 
 name := "Simple"
 

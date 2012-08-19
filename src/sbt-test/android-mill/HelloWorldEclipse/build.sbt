@@ -1,6 +1,6 @@
 import sbt.android.mill.MillKeys._
 
-sbt.android.mill.MillEclipse.projectSettings
+sbt.android.mill.MillEclipse.go
 
 name := "HelloWorldEclipse"
 

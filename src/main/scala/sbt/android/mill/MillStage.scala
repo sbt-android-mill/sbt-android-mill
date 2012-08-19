@@ -55,24 +55,15 @@ trait MillStage {
   def stageFinalizerTask = (state, streams) map ((state, streams) => stageFinalizer(state, streams.log))
   def stageFinalizer(state: State, log: sbt.Logger) = MillStage.stageFinalizer(tag, state, log)
   def stopwatchGroup = Mill.getStopwatchGroup(tag)
-  def taskPre(log: sbt.Logger, tag: String = tag) {
-    profiling(tag) = stopwatchGroup.start(tag)
-    log.info(header(tag) + "start task")
-  }
-  def taskPost(tag: String = tag) {
-    profiling.get(tag).foreach(_.stop)
-  }
-  def task[F](log: sbt.Logger, tag: String = tag)(f: => F): F = {
-    taskPre(log: sbt.Logger, tag)
-    val result = f
-    taskPost(tag)
-    result
-  }
+  def taskPre(log: sbt.Logger, tag: String = tag) = MillStage.taskPre(log, tag, profiling)
+  def taskPost(tag: String = tag) = MillStage.taskPost(tag, profiling)
+  def task[F](log: sbt.Logger, tag: String = tag)(f: => F): F = MillStage.task(log, tag, profiling)({ f })
 }
 
 sealed trait MillEvent
 
 object MillStage extends Publisher[MillEvent] {
+  protected val customProfiling = new HashMap[String, Stopwatch]() with SynchronizedMap[String, Stopwatch]
   def stagePrepare(tag: Scoped, state: State, log: sbt.Logger, firstPrepareInSequence: Boolean): Unit =
     stagePrepare(tag.key.label, state, log, firstPrepareInSequence)
   def stagePrepare(tag: String, state: State, log: sbt.Logger, firstPrepareInSequence: Boolean) {
@@ -83,6 +74,19 @@ object MillStage extends Publisher[MillEvent] {
   def stageFinalizer(tag: String, state: State, log: sbt.Logger) {
     log.debug(header(tag) + "finalizing sequence")
     Mill.synchronized { MillStage.publish(MillStage.Event.MillStop(state)) }
+  }
+  def taskPre(log: sbt.Logger, tag: String, profiling: HashMap[String, Stopwatch]) {
+    profiling(tag) = Mill.getStopwatchGroup(tag).start(tag)
+    log.info(header(tag) + "start task")
+  }
+  def taskPost(tag: String, profiling: HashMap[String, Stopwatch]) {
+    profiling.get(tag).foreach(_.stop)
+  }
+  def task[F](log: sbt.Logger, tag: String, profiling: HashMap[String, Stopwatch] = customProfiling)(f: => F): F = {
+    taskPre(log: sbt.Logger, tag, profiling)
+    val result = f
+    taskPost(tag, profiling)
+    result
   }
   protected def header(tag: String) = {
     val (minutes, seconds) = getRunTime

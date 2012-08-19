@@ -1,6 +1,6 @@
 import sbt.android.mill.MillKeys._
 
-sbt.android.mill.MillClassic.projectSettings
+sbt.android.mill.MillClassic.go
 
 name := "Simple"
 

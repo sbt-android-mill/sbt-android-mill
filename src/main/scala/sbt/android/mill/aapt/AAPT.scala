@@ -65,11 +65,11 @@ object AAPT extends MillStage {
           def runAapt(`package`: String, args: String*) {
             val extraPackages = if (libraries.nonEmpty) Seq("--extra-packages", libraries.map(_.pkgName).mkString(":")) else Seq()
             val aapt = Seq(aPath.absolutePath, "package", "-m", "--auto-add-overlay", "--non-constant-id") ++
-              extraPackages ++
-              Seq("-M", mPath.head.absolutePath,
+              extraPackages ++ Seq(
+                "-M", mPath.head.absolutePath,
                 "-S", resPath.absolutePath) ++
-                libraryResPathArgs ++
-                Seq("-I", jPath.absolutePath,
+                libraryResPathArgs ++ Seq(
+                  "-I", jPath.absolutePath,
                   "-J", javaPath.absolutePath) ++
                   args ++ libraryAssetPathArgs
             streams.log.debug(header() + aapt.mkString(" "))

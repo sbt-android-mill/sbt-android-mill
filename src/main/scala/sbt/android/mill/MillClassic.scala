@@ -21,7 +21,7 @@ package sbt.android.mill
 import sbt._
 
 object MillClassic extends Mill {
-  override def projectSettings = inConfig(MillKeys.millConf)(compositeSettings ++
+  override def go = inConfig(MillKeys.millConf)(compositeSettings ++
     pre.Pre.settings ++
     aidl.AIDL.settings ++
     aapt.AAPT.settings ++

@@ -23,19 +23,25 @@ import sbt.Keys._
 import sbt.android.mill.MillKeys._
 
 object MillEclipse extends Mill {
-  override def projectSettings = MillClassic.projectSettings ++ inConfig(MillKeys.millConf)(Seq(
+  override def go = MillClassic.go ++ inConfig(millConf)(Seq(
     manifestPath <<= (baseDirectory, manifestName) map ((base, name) => Seq(base / name)),
     mainAssetsPath <<= (baseDirectory, assetsDirectoryName)(_ / _),
     mainResPath <<= (baseDirectory, resDirectoryName) map (_ / _),
     managedJavaPath <<= (baseDirectory)(_ / "gen"),
     nativeLibrariesPath <<= (sourceDirectory)(_ / "libs"),
     aaptApkName := "resources.ap_",
-    aaptApkPath <<= (crossTarget, aaptApkName)(_ / _),
-    dxProjectDexPath <<= (crossTarget, dxProjectDexName)(_ / _),
+    aaptApkPath <<= (baseDirectory, aaptApkName)(_ / "bin" / _),
+    dxProjectDexPath <<= (baseDirectory, dxProjectDexName)(_ / "bin" / _),
     packageApkName <<= (name) map ((a) => String.format("%s.apk", a)),
-    packageApkPath <<= (crossTarget, packageApkName) map (_ / _),
-    crossTarget <<= (baseDirectory)(_ / "bin"),
-    Keys.target <<= (baseDirectory)(_ / "bin"))) ++
-    Seq(crossTarget <<= (baseDirectory)(_ / "bin"),
-      Keys.target <<= (baseDirectory)(_ / "bin"))
+    packageApkPath <<= (baseDirectory, packageApkName) map (_ / "bin" / _),
+    compileStageCore <<= eclipseSyncTask))
+  def eclipseSyncTask =
+    (compileStageCore in millConf, classDirectory in Compile, baseDirectory, streams) map {
+      (compileStageCore, originalClassDirectory, baseDirectory, streams) =>
+        MillStage.task(streams.log, eclipseSync.key.label) {
+          val eclipseClassDirectory = baseDirectory / "bin" / "classes"
+          streams.log.debug("update " + originalClassDirectory + " -> " + eclipseClassDirectory)
+          sbt.IO.copyDirectory(originalClassDirectory, eclipseClassDirectory, true)
+        }
+    }
 }

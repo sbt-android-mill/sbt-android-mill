@@ -43,7 +43,7 @@ import stopwatch.Stopwatch
  * stage 9 - publish
  */
 abstract class Mill extends Plugin {
-  def projectSettings: Seq[Project.Setting[_]]
+  def go: Seq[Project.Setting[_]]
   def compositeSettings: Seq[Project.Setting[_]] = MillSettings.defaultSettings ++
     MillSettings.overwriteSettings ++
     MillSettings.runtimeSettings ++
