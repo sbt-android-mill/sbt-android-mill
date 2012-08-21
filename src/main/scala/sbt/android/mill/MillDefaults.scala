@@ -24,6 +24,7 @@ object MillDefaults {
   val assetsDirectoryName = "assets"
   val envs = List("ANDROID_SDK_HOME", "ANDROID_SDK_ROOT", "ANDROID_HOME")
   val jarNameSDK = "android.jar"
+  val library = false
   val manifestName = "AndroidManifest.xml"
   val manifestSchema = "http://schemas.android.com/apk/res/android"
   val preinstalledModules = Seq[ModuleID](

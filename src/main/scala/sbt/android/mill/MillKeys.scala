@@ -43,6 +43,7 @@ object MillKeys {
   val aaptName = SettingKey[String]("aapt-name")
   val aaptPackage = TaskKey[File]("aapt-package", "Package resources and assets.")
   val aaptPath = SettingKey[File]("aapt-path")
+  val aaptVerbose = SettingKey[Boolean]("aapt-verbose", "Generate verbose output for aapt debugging")
   val aaptStagePrepare = TaskKey[Unit]("aapt-prepare", "Prepare for generation R.java.")
   val aaptStageCore = TaskKey[Seq[File]]("aapt-core", "Core task for generation R.java.")
   val aaptStageFinalizer = TaskKey[Unit]("aapt-generate", "Generate R.java.")
@@ -65,7 +66,9 @@ object MillKeys {
   // stage6 sbt.android.mill.dx
   val dxName = SettingKey[String]("dx-name")
   val dxInputs = TaskKey[Seq[File]]("dx-inputs", "Input for dex command")
-  val dxOpts = SettingKey[Tuple2[String, Option[Seq[String]]]]("dx-opts")
+  val dxMemoryOpt = SettingKey[String]("dx-memory-opt", "-JXmx argument, drop under windows")
+  val dxOpts = SettingKey[Seq[String]]("dx-opts", "dex options like --no-optimize, --keep-classes and so on")
+  val dxPredex = SettingKey[Option[Seq[String]]]("dx-predex", "predex option None or Some(Seq(“regexp”, ...)) like Some(Seq(\".*/digilib.*\"))")
   val dxPath = SettingKey[File]("dx-path")
   val dxProjectDexName = SettingKey[String]("dx-project-dex-name")
   val dxProjectDexPath = SettingKey[File]("dx-project-dex-path")
@@ -149,6 +152,7 @@ object MillKeys {
 
   /** Base Settings */
   val envs = SettingKey[Seq[String]]("envs")
+  val library = SettingKey[Boolean]("library", "Prevent append of generated sources to library jar")
   val libraries = TaskKey[Seq[LibraryProject]]("libraries", "Library projects")
   val librariesSources = TaskKey[Seq[File]]("libraries-sources", "Enumerate Java sources from library projects")
   val manifestSchema = SettingKey[String]("manifest-schema")

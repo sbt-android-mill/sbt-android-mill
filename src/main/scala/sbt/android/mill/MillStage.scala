@@ -55,9 +55,9 @@ trait MillStage {
   def stageFinalizerTask = (state, streams) map ((state, streams) => stageFinalizer(state, streams.log))
   def stageFinalizer(state: State, log: sbt.Logger) = MillStage.stageFinalizer(tag, state, log)
   def stopwatchGroup = Mill.getStopwatchGroup(tag)
-  def taskPre(log: sbt.Logger, tag: String = tag) = MillStage.taskPre(log, tag, profiling)
-  def taskPost(tag: String = tag) = MillStage.taskPost(tag, profiling)
-  def task[F](log: sbt.Logger, tag: String = tag)(f: => F): F = MillStage.task(log, tag, profiling)({ f })
+  def taskPre(log: sbt.Logger, taskTag: String = tag) = MillStage.taskPre(log, tag, taskTag, profiling)
+  def taskPost(taskTag: String = tag) = MillStage.taskPost(taskTag, profiling)
+  def task[F](log: sbt.Logger, taskTag: String = tag)(f: => F): F = MillStage.task(log, tag, taskTag, profiling)({ f })
 }
 
 sealed trait MillEvent
@@ -75,17 +75,17 @@ object MillStage extends Publisher[MillEvent] {
     log.info(header(tag) + "finalizing sequence")
     Mill.synchronized { MillStage.publish(MillStage.Event.MillStop(state)) }
   }
-  def taskPre(log: sbt.Logger, tag: String, profiling: HashMap[String, Stopwatch]) {
-    profiling(tag) = Mill.getStopwatchGroup(tag).start(tag)
-    log.info(header(tag) + "start task")
+  def taskPre(log: sbt.Logger, groupTag: String, taskTag: String, profiling: HashMap[String, Stopwatch]) {
+    profiling(taskTag) = Mill.getStopwatchGroup(groupTag).start(taskTag)
+    log.info(header(taskTag) + "start task")
   }
-  def taskPost(tag: String, profiling: HashMap[String, Stopwatch]) {
-    profiling.get(tag).foreach(_.stop)
+  def taskPost(taskTag: String, profiling: HashMap[String, Stopwatch]) {
+    profiling.get(taskTag).foreach(_.stop)
   }
-  def task[F](log: sbt.Logger, tag: String, profiling: HashMap[String, Stopwatch] = customProfiling)(f: => F): F = {
-    taskPre(log: sbt.Logger, tag, profiling)
+  def task[F](log: sbt.Logger, groupTag: String, taskTag: String, profiling: HashMap[String, Stopwatch] = customProfiling)(f: => F): F = {
+    taskPre(log: sbt.Logger, groupTag, taskTag, profiling)
     val result = f
-    taskPost(tag, profiling)
+    taskPost(taskTag, profiling)
     result
   }
   def header(tag: String) = {

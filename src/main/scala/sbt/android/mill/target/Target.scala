@@ -64,7 +64,7 @@ trait Target extends MillStage {
     (packageApkPath, targetADBPath, targetADBTimeout, targetADBLogLevel, streams) map {
       (packageApkPath, targetADBPath, targetADBTimeout, targetADBLogLevel, streams) =>
         val taskTagLabel = taskTag.key.label
-        task(streams.log) {
+        task(streams.log, taskTagLabel) {
           streams.log.info(header(taskTagLabel) + "install " + packageApkPath.getAbsolutePath() + " to " + tag)
           if (connection(targetADBTimeout))
             Target.command(emulator, targetADBPath.getAbsolutePath(), () => header(taskTagLabel), targetADBLogLevel, streams.log,

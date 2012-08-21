@@ -30,6 +30,7 @@ object AAPT extends MillStage {
   lazy val stageFinalizerKey = aaptStageFinalizer
   val DefaultAaptName = "aapt"
   val DefaultAaptResourcesApkName = "resources.apk"
+  val DefaultAaptVerbose = false
 
   val settings: Seq[Project.Setting[_]] = Seq(
     aaptApkName := DefaultAaptResourcesApkName,
@@ -37,6 +38,7 @@ object AAPT extends MillStage {
     aaptName := DefaultAaptName,
     aaptPackage <<= aaptPackageTask,
     aaptPath <<= (platformToolsPath, aaptName)(_ / _),
+    aaptVerbose := DefaultAaptVerbose,
     aaptStagePrepare <<= stagePrepareTask,
     aaptStagePrepare <<= aaptStagePrepare dependsOn (preStagePrepare, makeManagedJavaPath),
     aaptStageCore <<= aaptStageCoreTask,
@@ -46,8 +48,8 @@ object AAPT extends MillStage {
     sourceGenerators in Compile <+= aaptStageCore)
 
   def aaptStageCoreTask =
-    (manifestPackage, aaptPath, manifestPath, mainResPath, jarPathSDK, managedJavaPath, libraries, streams) map {
-      (mPackage, aPath, mPath, resPath, jPath, javaPath, libraries, streams) =>
+    (manifestPackage, aaptPath, aaptVerbose, manifestPath, mainResPath, jarPathSDK, managedJavaPath, libraries, streams) map {
+      (mPackage, aPath, verbose, mPath, resPath, jPath, javaPath, libraries, streams) =>
         task(streams.log) {
           val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header() + "aapt output: ")
           if (libraries.nonEmpty)
@@ -56,14 +58,14 @@ object AAPT extends MillStage {
           val libraryAssetPathArgs = libraries.flatMap(_.assets.map(d => Seq("-A", d.absolutePath))).flatten
           def runAapt(`package`: String, args: String*) {
             val extraPackages = if (libraries.nonEmpty) Seq("--extra-packages", libraries.map(_.pkgName).mkString(":")) else Seq()
-            val aapt = Seq(aPath.absolutePath, "package", "--auto-add-overlay", "-v", "-m", "--non-constant-id", "--custom-package", mPackage) ++
+            val aapt = Seq(aPath.absolutePath, "package", "--auto-add-overlay", "-m", "--non-constant-id", "--custom-package", mPackage) ++
               extraPackages ++ Seq(
                 "-M", mPath.head.absolutePath,
                 "-S", resPath.absolutePath) ++
                 libraryResPathArgs ++ Seq(
                   "-I", jPath.absolutePath,
                   "-J", javaPath.absolutePath) ++
-                  args ++ libraryAssetPathArgs
+                  libraryAssetPathArgs ++ args ++ (if (verbose) Seq("-v") else Seq())
             streams.log.debug(header() + aapt.mkString(" "))
             val code = Process(aapt) ! logger
             logger.flush(code)
@@ -75,21 +77,22 @@ object AAPT extends MillStage {
         }
     }
   def aaptPackageTask: Project.Initialize[Task[File]] =
-    (aaptPath, manifestPath, mainResPath, mainAssetsPath, jarPathSDK, aaptApkPath, libraries, streams) map {
-      (apPath, manPath, rPath, assetPath, jPath, resApkPath, libraries, streams) =>
+    (aaptPath, aaptVerbose, manifestPath, mainResPath, mainAssetsPath, jarPathSDK, aaptApkPath, libraries, streams) map {
+      (apPath, verbose, manPath, rPath, assetPath, jPath, resApkPath, libraries, streams) =>
         val taskKeyLabel = aaptPackage.key.label
         task(streams.log, taskKeyLabel) {
           val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header(taskKeyLabel) + "aapt output: ")
           if (libraries.nonEmpty)
             streams.log.debug(header(taskKeyLabel) + "add libraries '" + libraries.map(_.pkgName).mkString("', '") + "'")
           val libraryResPathArgs = libraries.flatMap(_.resources.map(d => Seq("-S", d.absolutePath))).flatten
-          val aapt = Seq(apPath.absolutePath, "package", "--auto-add-overlay", "-f", "--generate-dependencies", "-v",
+          val aapt = Seq(apPath.absolutePath, "package", "--auto-add-overlay", "-f", "--generate-dependencies",
             "-M", manPath.head.absolutePath,
             "-S", rPath.absolutePath) ++
             libraryResPathArgs ++
             Seq("-A", assetPath.absolutePath,
               "-I", jPath.absolutePath,
-              "-F", resApkPath.absolutePath)
+              "-F", resApkPath.absolutePath) ++
+              (if (verbose) Seq("-v") else Seq())
           streams.log.debug(header(taskKeyLabel) + "packaging: " + aapt.mkString(" "))
           val code = Process(aapt) ! logger
           logger.flush(code)
