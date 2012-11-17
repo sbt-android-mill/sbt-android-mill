@@ -15,6 +15,25 @@ There are base HelloWorld projects:
 
 Please, read [sbt.android.mill.MillKeys](https://github.com/sbt-android-mill/sbt-android-mill/blob/master/src/main/scala/sbt/android/mill/MillKeys.scala). It is very very easy to read.
 
+## Environment ##
+
+Please note that Android SDK with Scala is best suited for Oracle Java 1.6.
+
+If you want to use Java 1.7 please turn off optimization.
+
+```scala    
+scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Xcheckinit") ++
+  (if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")) // -optimize fails with jdk7
+```
+
+Using OpenJDK lead to incorrect bytecode interpretation in Android dx tool.
+
+Example development environment is:
+* Eclipse 3.7.1 with Scala 2.9 Nighly and latest ADK based on **Java 7**
+* SBT 0.12.x with Scala 2.8.2 based on **Java 6**
+
+So we develop our applications in Scala 2.9.x environment and compile it with Scala 2.8.x
+
 ## Participate in the development ##
 
 Branches:
