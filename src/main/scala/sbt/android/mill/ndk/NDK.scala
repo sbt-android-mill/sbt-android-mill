@@ -114,17 +114,18 @@ object NDK extends MillStage {
               streams.log.error(header(tag) + "ndk-build failed with nonzero exit code (" + code + ")")
           }
         else
-          streams.log.info(header(tag) + "ndk-jni-directory-path not exists, skip")
+          streams.log.debug(header(tag) + "ndk-jni-directory-path not exists, skip")
     }
   def javahTask =
     (ndkJavahPath, classDirectory in Compile, internalDependencyClasspath in Compile,
       externalDependencyClasspath in Compile, ndkJNIClasses, ndkJavahOutputDirectory, ndkJavahOutputFile, streams) map {
         (javahPath, classDirectory, internalDependencyClasspath, externalDependencyClasspath,
         classes, outputDirectory, outputFile, streams) =>
+          val taskKeyLabel = ndkJavah.key.label
           val classpath = Seq(classDirectory) ++ internalDependencyClasspath.files ++ externalDependencyClasspath.files
           val log = streams.log
           if (classes.isEmpty) {
-            log.debug("No JNI classes, skipping javah")
+            log.debug(header(taskKeyLabel) + "no JNI classes, skip")
           } else {
             outputDirectory.mkdirs()
             val classpathArgument = classpath.map(_.getAbsolutePath()).mkString(File.pathSeparator)
@@ -134,17 +135,17 @@ object NDK extends MillStage {
                 // Neither javah nor RichFile.relativeTo will work unless the directories exist.
                 Option(outputFile.getParentFile) foreach (_.mkdirs())
                 if (!(outputFile relativeTo outputDirectory).isDefined) {
-                  log.warn("javah output file [" + outputFile + "] is not within javah output directory [" +
+                  log.warn(header(taskKeyLabel) + "javah output file [" + outputFile + "] is not within javah output directory [" +
                     outputDirectory + "], continuing anyway")
                 }
                 Seq("-o", outputFile.absolutePath)
               case None => Seq("-d", outputDirectory.absolutePath)
             }
             val javahCommandLine = Seq(javahPath, "-classpath", classpathArgument) ++ outputArguments ++ classes
-            log.debug("Running javah: " + (javahCommandLine mkString " "))
+            log.debug(header(taskKeyLabel) + "running javah: " + (javahCommandLine mkString " "))
             val exitCode = Process(javahCommandLine) ! log
             if (exitCode != 0)
-              sys.error("javah exited with " + exitCode)
+              sys.error(header(taskKeyLabel) + "javah exited with " + exitCode)
           }
       }
   private def compose(parent: File, child: File): File =

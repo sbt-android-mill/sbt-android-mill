@@ -21,8 +21,7 @@ package sbt.android.mill.util
 import java.io.InputStream
 import java.io.OutputStream
 import java.lang.ProcessBuilder
-
-import sbt.ProcessIO
+import sbt._
 
 object Compat {
   val (processIOConstructor, processIOnew) = {
@@ -30,10 +29,16 @@ object Compat {
     assert(ctor.length == 1, "unknown sbt.ProcessIO signature")
     (ctor.head, ctor.head.getParameterTypes.length == 4)
   }
+  val packageTaskMethod = {
+    val methods = Defaults.getClass.getMethods
+    methods.find(_.getName() == "packageTaskSettings") getOrElse methods.find(_.getName() == "packageTasks").get
+  }
   def process(writeInput: OutputStream => Unit, processOutput: InputStream => Unit,
     processError: InputStream => Unit, inheritInput: ProcessBuilder => Boolean = ii => false) =
     if (processIOnew)
       processIOConstructor.newInstance(writeInput, processOutput, processError, inheritInput)
     else
       processIOConstructor.newInstance(writeInput, processOutput, processError)
+  def packageTasks(key: TaskKey[File], mappingsTask: sbt.Init[Scope]#Initialize[Task[Seq[(File, String)]]]): Seq[Setting[_]] =
+    packageTaskMethod.invoke(Defaults, key, mappingsTask).asInstanceOf[Seq[Setting[_]]]
 }

@@ -18,15 +18,19 @@
 
 package sbt.android.mill
 
+import java.io.File
+import java.lang.System
+
+import scala.Array.canBuildFrom
+import scala.Option.option2Iterable
+import scala.collection.mutable.Subscriber
+import scala.xml.XML
+
 import sbt._
 import sbt.Keys._
-import sbt.Plugin
 import sbt.android.mill.MillKeys._
-import stopwatch.StopwatchGroup
-import java.lang.System
-import scala.xml.XML
-import scala.collection.mutable.Subscriber
 import stopwatch.Stopwatch
+import stopwatch.StopwatchGroup
 
 /**
  * main plugin class
@@ -56,6 +60,7 @@ object Mill {
   @volatile var buildStartTime = 0L
   @volatile var totalStopwatch: Option[Stopwatch] = None
   @volatile var profilingGroups: Seq[StopwatchGroup] = Seq()
+  val tag = "mill"
   val subscriber = new Subscriber[MillEvent, MillStage.type#Pub] {
     def notify(pub: MillStage.type#Pub, event: MillEvent) = event match {
       case MillStage.Event.MillStart(state) =>
@@ -190,9 +195,27 @@ object Mill {
     (toolsPath, packageApkPath, aaptApkPath, dxProjectDexPath,
       nativeLibrariesPath, managedNativePath, dxInputs, resourceDirectory) map
       (ApkConfig(_, _, _, _, _, _, _, _))
+  /**
+   * filter all resources out like
+   * org/digimead/digi/ctrl/lib/R\$xml.class and so on
+   * R$ generated in result application via aapt
+   */
+  def packageBinTask =
+    (library, manifestPackage, products in Compile, streams) map {
+      (library, manifestPackage, products, streams) =>
+        val results = products flatMap { p => allSubpaths(p) }
+        if (library) {
+          val prefix = manifestPackage.replaceAll("""\.""", """/""")
+          results.filter(t => if (t._2 == (prefix + "/R.class") || t._2.startsWith(prefix + "/R$")) {
+            streams.log.debug(MillStage.header("package-bin") + "filter out " + t._2)
+            false
+          } else true)
+        } else
+          results
+    }
   def packageTask(debug: Boolean, taskTag: Scoped): Project.Initialize[Task[File]] = (packageConfig, streams) map { (c, streams) =>
     val taskKeyLabel = taskTag.key.label
-    MillStage.task(streams.log, taskKeyLabel) {
+    MillStage.task(streams.log, tag, taskKeyLabel) {
       val builder = new MillApkBuilder(c, debug)
       builder.build.fold(msg => sys.error(MillStage.header(taskKeyLabel) + msg),
         msg => streams.log.info(MillStage.header(taskKeyLabel) + msg))

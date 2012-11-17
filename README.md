@@ -15,6 +15,24 @@ There are base HelloWorld projects:
 
 Please, read [sbt.android.mill.MillKeys](https://github.com/sbt-android-mill/sbt-android-mill/blob/master/src/main/scala/sbt/android/mill/MillKeys.scala). It is very very easy to read.
 
+## Participate in the development ##
+
+Branches:
+
+* origin/master reflects a production-ready state
+* origin/release-* support preparation of a new production release. Allow for last-minute dotting of i’s and crossing t’s
+* origin/hotfix-* support preparation of a new unplanned production release
+* origin/develop reflects a state with the latest delivered development changes for the next release (nightly builds)
+* origin/feature-* new features for the upcoming or a distant future release
+
+Structure of branches follow strategy of http://nvie.com/posts/a-successful-git-branching-model/
+
+If you will create new origin/feature-* please open feature request for yourself.
+
+* Anyone may comment you feature here.
+* We will have a history for feature and ground for documentation
+* If week passed and there wasn't any activity + all tests passed = release a new version ;-)
+
 ## Adding to your project ##
 
 Create a
@@ -54,6 +72,18 @@ or
 ## workflow / structure
 
 ![packages structure](https://github.com/sbt-android-mill/sbt-android-mill/blob/master/notes/sbt-android-mill.png?raw=true)
+
+FAQ
+---
+
+q. I don't like artifact name with ```package-bin```. How I may change it?
+
+a. You may setup your artifact name explicit:
+
+```scala
+artifactName := ((version: ScalaVersion, module: ModuleID, artifact: Artifact) =>
+  artifact.name + "-" + module.revision + "." + artifact.extension )
+  ```
 
 AUTHORS
 -------

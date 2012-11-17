@@ -26,18 +26,30 @@ import sbt.android.mill.MillKeys._
 import sbt.android.mill.Mill
 import sbt.android.mill.util.ReduceLogLevelWrapper
 
+/*
+ * I got
+ * real	0m9.516s with dx --num-threads=java.lang.Runtime.getRuntime.availableProcessors (8 cores)
+ * real	0m7.445s with dx --num-threads=1
+ * real	0m4.699s with dx --num-threads=1 --no-optimize
+ * also --num-threads=1 is strongly recommend because fatal error in thread not affect for dx return status
+ * gentoo linux 20.08.2012 Ezh
+ */
 object DX extends MillStage {
   lazy val stagePrepareKey = dxStagePrepare
   lazy val stageCoreKey = dxStageCore
   lazy val stageFinalizerKey = dxStageFinalizer
   val DefaultDXName = "dx"
-  val DefaultDxOpts = ("-JXmx512m", None)
+  val DefaultDxMemoryOpt = "-JXmx512m"
+  val DefaultDxOpts = Seq("--num-threads=1")
+  val DefaultDxPredex = None
   val DefaultProjectDexName = "classes.dex"
 
   lazy val settings: Seq[Project.Setting[_]] = Seq(
     dxName := DefaultDXName,
     dxInputs <<= dxInputsTask,
+    dxMemoryOpt := DefaultDxMemoryOpt,
     dxOpts := DefaultDxOpts,
+    dxPredex := DefaultDxPredex,
     dxPath <<= (platformToolsPath, dxName)(_ / _),
     dxProjectDexName := DefaultProjectDexName,
     dxProjectDexPath <<= (target, dxProjectDexName)(_ / _),
@@ -49,11 +61,11 @@ object DX extends MillStage {
     dxStageFinalizer <<= dxStageFinalizer dependsOn (dxStagePrepare, dxStageCore))
 
   def dxStageCoreTask: Project.Initialize[Task[File]] =
-    (dxPath, dxInputs, dxOpts, proguardOptimizations, classDirectory, dxProjectDexPath, scalaInstance, streams) map {
-      (dxPath, dxInputs, dxOpts, proguardOptimizations, classDirectory, classesDexPath, scalaInstance, streams) =>
+    (dxPath, dxInputs, dxMemoryOpt, dxOpts, dxPredex, proguardOptimizations, classDirectory in millConf, dxProjectDexPath, scalaInstance, streams) map {
+      (dxPath, dxInputs, dxMemoryOpt, dxOpts, dxPredex, proguardOptimizations, classDirectory, classesDexPath, scalaInstance, streams) =>
         task(streams.log) {
           val logger = new ReduceLogLevelWrapper(streams.log, Level.Debug, () => header() + "dx output: ")
-          def dexing(inputs: Seq[JFile], output: JFile) {
+          def dexing(inputs: Seq[JFile], output: JFile) = task(streams.log, tag + " " + output.getName()) {
             val uptodate = output.exists && inputs.forall(input =>
               input.isDirectory match {
                 case true =>
@@ -64,14 +76,12 @@ object DX extends MillStage {
 
             if (!uptodate) {
               val noLocals = if (proguardOptimizations.isEmpty) "" else "--no-locals"
-              val dxCmd = (Seq(dxPath.absolutePath,
-                dxMemoryParameter(dxOpts._1),
-                "--dex", noLocals,
-                "--num-threads=" + java.lang.Runtime.getRuntime.availableProcessors,
+              val dxCmd = (Seq(dxPath.absolutePath, dxMemoryParameter(dxMemoryOpt), "--dex") ++ dxOpts ++ Seq(
+                noLocals,
                 "--output=" + output.getAbsolutePath) ++
                 inputs.map(_.absolutePath)).filter(_.length > 0)
-              streams.log.debug(header() + dxCmd.mkString(" "))
               streams.log.info(header() + "Dexing " + output.getAbsolutePath)
+              streams.log.debug(header() + dxCmd.mkString(" "))
               val code = Process(dxCmd) ! logger
               logger.flush(code)
               if (code != 0)
@@ -80,24 +90,26 @@ object DX extends MillStage {
           }
 
           // Option[Seq[String]]
-          // - None standard dexing for prodaction stage
+          // - None standard dexing for production stage
           // - Some(Seq(predex_library_regexp)) predex only changed libraries for development stage
-          dxOpts._2 match {
+          dxPredex match {
             case None =>
               dexing(dxInputs.get, classesDexPath)
             case Some(predex) =>
               val (dexFiles, predexFiles) = predex match {
-                case exceptSeq: Seq[_] if exceptSeq.nonEmpty =>
+                case filterRegExps: Seq[_] if filterRegExps.nonEmpty =>
                   val (filtered, orig) = dxInputs.get.partition(file =>
-                    exceptSeq.exists(filter => {
+                    filterRegExps.exists(filter => {
                       streams.log.debug(header() + "apply filter \"" + filter + "\" to \"" + file.getAbsolutePath + "\"")
-                      file.getAbsolutePath.matches(filter)
+                      file.getAbsolutePath.matches(filter) || file.getAbsolutePath() == classDirectory.getAbsolutePath()
                     }))
                   // dex only classes directory ++ filtered, predex all other
-                  ((classDirectory --- scalaInstance.libraryJar).get ++ filtered, orig)
+                  ((filtered --- scalaInstance.libraryJar).get, orig)
                 case _ =>
+                  val (filtered, orig) = dxInputs.get.partition(file =>
+                    file.getAbsolutePath() == classDirectory.getAbsolutePath())
                   // dex only classes directory, predex all other
-                  ((classDirectory --- scalaInstance.libraryJar).get, (dxInputs --- classDirectory).get)
+                  ((filtered --- scalaInstance.libraryJar).get, orig)
               }
               dexFiles.foreach(s => streams.log.debug(header() + "pack in dex \"" + s.getName + "\""))
               predexFiles.foreach(s => streams.log.debug(header() + "pack in predex \"" + s.getName + "\""))
@@ -119,7 +131,7 @@ object DX extends MillStage {
           classesDexPath
         }
     }
-  def dxInputsTask = (proguardStageCore, proguardInJars, scalaInstance, classDirectory) map {
+  def dxInputsTask = (proguardStageCore, proguardInJars, scalaInstance, classDirectory in millConf) map {
     (proguard, proguardInJars, scalaInstance, classDirectory) =>
       proguard match {
         case Some(file) => Seq(file)

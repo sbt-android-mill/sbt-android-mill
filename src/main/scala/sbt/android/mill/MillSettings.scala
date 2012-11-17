@@ -24,6 +24,7 @@ import MillKeys._
 import sbinary.DefaultProtocol.StringFormat
 import sbt._
 import sbt.Keys._
+import sbt.android.mill.util.Compat
 
 object MillSettings {
   val defaultSettings = Seq[Setting[_]](
@@ -32,6 +33,7 @@ object MillSettings {
     jarNameSDK := MillDefaults.jarNameSDK,
     manifestName := MillDefaults.manifestName,
     manifestSchema := MillDefaults.manifestSchema,
+    library := MillDefaults.library,
     preinstalledModules := MillDefaults.preinstalledModules,
     resDirectoryName := MillDefaults.resDirectoryName)
   val runtimeSettings = Seq[Setting[_]](
@@ -82,7 +84,8 @@ object MillSettings {
   val overwriteSettings = Seq[Setting[_]](
     managedSourceDirectories in Compile <<= (managedJavaPath, managedScalaPath)(Seq(_, _)),
     unmanagedJars in Compile <++= (jarPathSDK) map (_.get.map(Attributed.blank(_))),
-    classpathTypes in Compile := Set("jar", "bundle", "so"))
+    classpathTypes in Compile := Set("jar", "bundle", "so")) ++
+    Compat.packageTasks(packageBin in Compile, Mill.packageBinTask)
 
   def findManifestPath() = (manifestPath) map (p =>
     Mill.manifest(p.head).attribute("package").getOrElse(sys.error("package not defined")).text)
