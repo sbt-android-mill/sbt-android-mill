@@ -4,7 +4,7 @@ name := "sbt-android-mill"
 
 organization := "sbt.android.mill"
 
-version := "0.2-SNAPSHOT"
+version := "0.2"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xcheckinit", "-Xfatal-warnings")
 
