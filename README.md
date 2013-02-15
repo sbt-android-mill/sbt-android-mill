@@ -66,7 +66,7 @@ file that looks like the following:
     object PluginDef extends Build {
       override def projects = Seq(root)
       lazy val root = Project("plugins", file(".")) dependsOn(mill)
-      lazy val mill = uri("git://github.com/sbt-android-mill/sbt-android-mill.git#0.1")
+      lazy val mill = uri("git://github.com/sbt-android-mill/sbt-android-mill.git#0.2")
     }
 ```
 
